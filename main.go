@@ -13,8 +13,6 @@ var db *gorm.DB
 
 func main() {
 
-	postgresUrl := "postgresql://postgres:nTxKjhI3oKFA28H43utW@containers-us-west-101.railway.app:5471/railway"
-
 	sqlDB, err := sql.Open("pgx", postgresUrl)
 	if err != nil {
 		log.Fatal(err)
