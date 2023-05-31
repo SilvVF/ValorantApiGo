@@ -564,9 +564,9 @@ type ScrapedPlayerData struct {
 				Description     interface{} `json:"description"`
 				Metadata        struct {
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"grenadeCasts"`
 			GrenadeCastsPerRound struct {
 				Rank            interface{} `json:"rank"`
@@ -590,9 +590,9 @@ type ScrapedPlayerData struct {
 				Description     interface{} `json:"description"`
 				Metadata        struct {
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"grenadeCastsPerMatch"`
 			Ability1Casts struct {
 				Rank            interface{} `json:"rank"`
@@ -629,9 +629,9 @@ type ScrapedPlayerData struct {
 				Description     interface{} `json:"description"`
 				Metadata        struct {
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"ability1CastsPerMatch"`
 			Ability2Casts struct {
 				Rank            interface{} `json:"rank"`
@@ -668,9 +668,9 @@ type ScrapedPlayerData struct {
 				Description     interface{} `json:"description"`
 				Metadata        struct {
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"ability2CastsPerMatch"`
 			UltimateCasts struct {
 				Rank            interface{} `json:"rank"`
@@ -707,9 +707,9 @@ type ScrapedPlayerData struct {
 				Description     interface{} `json:"description"`
 				Metadata        struct {
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"ultimateCastsPerMatch"`
 			DealtHeadshots struct {
 				Rank            interface{} `json:"rank"`
@@ -798,9 +798,9 @@ type ScrapedPlayerData struct {
 				Description     interface{} `json:"description"`
 				Metadata        struct {
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"econRating"`
 			EconRatingPerMatch struct {
 				Rank            interface{} `json:"rank"`
@@ -811,9 +811,9 @@ type ScrapedPlayerData struct {
 				Description     interface{} `json:"description"`
 				Metadata        struct {
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"econRatingPerMatch"`
 			EconRatingPerRound struct {
 				Rank            interface{} `json:"rank"`
@@ -1292,9 +1292,9 @@ type ScrapedPlayerData struct {
 				Description     interface{} `json:"description"`
 				Metadata        struct {
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"plantsPerMatch"`
 			PlantsPerRound struct {
 				Rank            interface{} `json:"rank"`
@@ -1305,9 +1305,9 @@ type ScrapedPlayerData struct {
 				Description     interface{} `json:"description"`
 				Metadata        struct {
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"plantsPerRound"`
 			AttackKills struct {
 				Rank            interface{} `json:"rank"`
@@ -1357,9 +1357,9 @@ type ScrapedPlayerData struct {
 				Description     interface{} `json:"description"`
 				Metadata        struct {
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"attackKDRatio"`
 			AttackAssists struct {
 				Rank            interface{} `json:"rank"`
@@ -1448,9 +1448,9 @@ type ScrapedPlayerData struct {
 				Description     interface{} `json:"description"`
 				Metadata        struct {
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"attackScore"`
 			AttackScorePerRound struct {
 				Rank            interface{} `json:"rank"`
@@ -1474,9 +1474,9 @@ type ScrapedPlayerData struct {
 				Description     interface{} `json:"description"`
 				Metadata        struct {
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"attackDamage"`
 			AttackDamagePerRound struct {
 				Rank            interface{} `json:"rank"`
@@ -1552,9 +1552,9 @@ type ScrapedPlayerData struct {
 				Description     interface{} `json:"description"`
 				Metadata        struct {
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"attackFirstBloodsPerRound"`
 			AttackFirstDeaths struct {
 				Rank            interface{} `json:"rank"`
@@ -1617,9 +1617,9 @@ type ScrapedPlayerData struct {
 				Description     interface{} `json:"description"`
 				Metadata        struct {
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"defusesPerMatch"`
 			DefusesPerRound struct {
 				Rank            interface{} `json:"rank"`
@@ -1773,9 +1773,9 @@ type ScrapedPlayerData struct {
 				Description     interface{} `json:"description"`
 				Metadata        struct {
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"defenseScore"`
 			DefenseScorePerRound struct {
 				Rank            interface{} `json:"rank"`
@@ -1799,9 +1799,9 @@ type ScrapedPlayerData struct {
 				Description     interface{} `json:"description"`
 				Metadata        struct {
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"defenseDamage"`
 			DefenseDamagePerRound struct {
 				Rank            interface{} `json:"rank"`
@@ -1916,9 +1916,9 @@ type ScrapedPlayerData struct {
 				Description     interface{} `json:"description"`
 				Metadata        struct {
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"defenseKAST"`
 			Rank struct {
 				Rank            interface{} `json:"rank"`
@@ -1945,9 +1945,9 @@ type ScrapedPlayerData struct {
 				Metadata        struct {
 					Stats []string `json:"stats"`
 				} `json:"metadata"`
-				Value        int    `json:"value"`
-				DisplayValue string `json:"displayValue"`
-				DisplayType  string `json:"displayType"`
+				Value        float64 `json:"value"`
+				DisplayValue string  `json:"displayValue"`
+				DisplayType  string  `json:"displayType"`
 			} `json:"trnPerformanceScore"`
 			PeakRank struct {
 				Rank            interface{} `json:"rank"`

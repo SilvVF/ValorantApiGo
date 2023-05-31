@@ -19,6 +19,9 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 				"tag": &graphql.ArgumentConfig{
 					Type: graphql.String,
 				},
+				"fetch": &graphql.ArgumentConfig{
+					Type: graphql.Boolean,
+				},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				return playerResolver(&p)

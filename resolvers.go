@@ -9,10 +9,11 @@ import (
 func playerResolver(p *graphql.ResolveParams) (Player, error) {
 	name, nameOk := p.Args["name"].(string)
 	tag, tagOk := p.Args["tag"].(string)
+	fetch, fetchOk := p.Args["fetch"].(bool)
 	if nameOk && tagOk {
 		// Search for el with name
 		var player Player
-		if err := db.First(&player, "id = ?", playerKey(name, tag)).Error; err != nil {
+		if err := db.First(&player, "id = ?", playerKey(name, tag)).Error; err != nil || fetch || fetchOk {
 			pd := getPlayerData(name, tag)
 			player = Player{
 				ID:        playerKey(name, tag),
@@ -25,7 +26,7 @@ func playerResolver(p *graphql.ResolveParams) (Player, error) {
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			}
-			if err := db.Create(&player).Error; err != nil {
+			if err := db.Save(&player).Error; err != nil {
 				log.Println(err)
 			}
 			return player, nil
