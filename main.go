@@ -1,6 +1,7 @@
 package main
 
 import (
+	"LFGbackend/keys"
 	"database/sql"
 	"github.com/graphql-go/handler"
 	"gorm.io/driver/postgres"
@@ -13,7 +14,7 @@ var db *gorm.DB
 
 func main() {
 
-	sqlDB, err := sql.Open("pgx", postgresUrl)
+	sqlDB, err := sql.Open("pgx", keys.PostgresUrl)
 	if err != nil {
 		log.Fatal(err)
 	}
