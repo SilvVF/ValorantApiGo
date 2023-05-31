@@ -1,6 +1,9 @@
 package types
 
-import "LFGbackend/graph/model"
+import (
+	"LFGbackend/graph/model"
+	"time"
+)
 
 type PlayerData struct {
 	SeasonId            string
@@ -19,9 +22,15 @@ type PlayerData struct {
 	MostKillsInMatch    int
 }
 
+type GormPlayer struct {
+	Id        string `gorm:"primaryKey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	model.Player
+}
+
 func (data PlayerData) AsPlayer(name string, tag string) model.Player {
 	return model.Player{
-		ID:                  name + tag,
 		Name:                name,
 		Tag:                 tag,
 		Rank:                data.Rank,

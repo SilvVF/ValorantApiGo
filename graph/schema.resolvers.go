@@ -11,13 +11,23 @@ import (
 )
 
 // UpsertPlayer is the resolver for the upsertPlayer field.
-func (r *mutationResolver) UpsertPlayer(ctx context.Context, playerInput model.PlayerInput) (*model.Player, error) {
-	return resolvers.UpsertPlayerResolver(ctx, playerInput)
+func (r *mutationResolver) UpsertPlayer(ctx context.Context, player model.PlayerInput) (*model.Player, error) {
+	return resolvers.UpsertPlayerResolver(ctx, player)
+}
+
+// CreatePost is the resolver for the createPost field.
+func (r *mutationResolver) CreatePost(ctx context.Context, mode model.GameMode, player model.PlayerInput, need int, minRank model.Rank) (string, error) {
+	return resolvers.CreatePostResolver(ctx, mode, player, need, minRank)
+}
+
+// JoinPost is the resolver for the joinPost field.
+func (r *mutationResolver) JoinPost(ctx context.Context, player model.PlayerInput, id string) (bool, error) {
+	return resolvers.JoinPostResolver(ctx, player, id)
 }
 
 // GetPlayer is the resolver for the getPlayer field.
-func (r *queryResolver) GetPlayer(ctx context.Context, playerInput model.PlayerInput) (*model.Player, error) {
-	return resolvers.GetPlayerResolver(ctx, playerInput)
+func (r *queryResolver) GetPlayer(ctx context.Context, player model.PlayerInput) (*model.Player, error) {
+	return resolvers.GetPlayerResolver(ctx, player)
 }
 
 // Mutation returns MutationResolver implementation.

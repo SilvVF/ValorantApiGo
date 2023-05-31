@@ -4,7 +4,6 @@
 
 
 type Player {
-  id:                  String!
   name:                String!
   tag:                 String!
   rank:                String!
@@ -27,9 +26,49 @@ input PlayerInput {
 }
 
 type Query {
-  getPlayer(playerInput: PlayerInput!): Player!
+  getPlayer(player: PlayerInput!): Player!
 }
 
 type Mutation {
-  upsertPlayer(playerInput: PlayerInput!): Player!
+
+  upsertPlayer(player: PlayerInput!): Player!
+
+  createPost(mode: GameMode!, player: PlayerInput!, need: Int!, minRank: Rank!): String!
+
+  joinPost(player: PlayerInput!, id: String!): Boolean!
+}
+
+enum GameMode {
+  RANKED
+  UNRANKED
+  SPIKE
+}
+
+enum Rank {
+  RADIANT
+  IMMORTAL3
+  IMMORTAL2
+  IMMORTAL1
+  ASCENDANT3
+  ASCENDANT2
+  ASCENDANT1
+  DIAMOND3
+  DIAMOND2
+  DIAMOND1
+  PLAT3
+  PLAT2
+  PLAT1
+  GOLD3
+  GOLD2
+  GOLD1
+  SILVER3
+  SILVER2
+  SILVER1
+  BRONZE3
+  BRONZE2
+  BRONZE1
+  IRON3
+  IRON2
+  IRON1
+  UNRANKED
 }

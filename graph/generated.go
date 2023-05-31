@@ -46,7 +46,9 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Mutation struct {
-		UpsertPlayer func(childComplexity int, playerInput model.PlayerInput) int
+		CreatePost   func(childComplexity int, mode model.GameMode, player model.PlayerInput, need int, minRank model.Rank) int
+		JoinPost     func(childComplexity int, player model.PlayerInput, id string) int
+		UpsertPlayer func(childComplexity int, player model.PlayerInput) int
 	}
 
 	Player struct {
@@ -54,7 +56,6 @@ type ComplexityRoot struct {
 		FirstBloodsPerMatch func(childComplexity int) int
 		FirstDeathsPerRound func(childComplexity int) int
 		HeadshotPct         func(childComplexity int) int
-		ID                  func(childComplexity int) int
 		IconURL             func(childComplexity int) int
 		Kd                  func(childComplexity int) int
 		Kda                 func(childComplexity int) int
@@ -68,15 +69,17 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		GetPlayer func(childComplexity int, playerInput model.PlayerInput) int
+		GetPlayer func(childComplexity int, player model.PlayerInput) int
 	}
 }
 
 type MutationResolver interface {
-	UpsertPlayer(ctx context.Context, playerInput model.PlayerInput) (*model.Player, error)
+	UpsertPlayer(ctx context.Context, player model.PlayerInput) (*model.Player, error)
+	CreatePost(ctx context.Context, mode model.GameMode, player model.PlayerInput, need int, minRank model.Rank) (string, error)
+	JoinPost(ctx context.Context, player model.PlayerInput, id string) (bool, error)
 }
 type QueryResolver interface {
-	GetPlayer(ctx context.Context, playerInput model.PlayerInput) (*model.Player, error)
+	GetPlayer(ctx context.Context, player model.PlayerInput) (*model.Player, error)
 }
 
 type executableSchema struct {
@@ -94,6 +97,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
+	case "Mutation.createPost":
+		if e.complexity.Mutation.CreatePost == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createPost_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreatePost(childComplexity, args["mode"].(model.GameMode), args["player"].(model.PlayerInput), args["need"].(int), args["minRank"].(model.Rank)), true
+
+	case "Mutation.joinPost":
+		if e.complexity.Mutation.JoinPost == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_joinPost_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.JoinPost(childComplexity, args["player"].(model.PlayerInput), args["id"].(string)), true
+
 	case "Mutation.upsertPlayer":
 		if e.complexity.Mutation.UpsertPlayer == nil {
 			break
@@ -104,7 +131,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpsertPlayer(childComplexity, args["playerInput"].(model.PlayerInput)), true
+		return e.complexity.Mutation.UpsertPlayer(childComplexity, args["player"].(model.PlayerInput)), true
 
 	case "Player.dmgPerRound":
 		if e.complexity.Player.DmgPerRound == nil {
@@ -133,13 +160,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Player.HeadshotPct(childComplexity), true
-
-	case "Player.id":
-		if e.complexity.Player.ID == nil {
-			break
-		}
-
-		return e.complexity.Player.ID(childComplexity), true
 
 	case "Player.iconUrl":
 		if e.complexity.Player.IconURL == nil {
@@ -221,7 +241,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.GetPlayer(childComplexity, args["playerInput"].(model.PlayerInput)), true
+		return e.complexity.Query.GetPlayer(childComplexity, args["player"].(model.PlayerInput)), true
 
 	}
 	return 0, false
@@ -311,18 +331,84 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Mutation_upsertPlayer_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_createPost_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.GameMode
+	if tmp, ok := rawArgs["mode"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mode"))
+		arg0, err = ec.unmarshalNGameMode2LFGbackendᚋgraphᚋmodelᚐGameMode(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["mode"] = arg0
+	var arg1 model.PlayerInput
+	if tmp, ok := rawArgs["player"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("player"))
+		arg1, err = ec.unmarshalNPlayerInput2LFGbackendᚋgraphᚋmodelᚐPlayerInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["player"] = arg1
+	var arg2 int
+	if tmp, ok := rawArgs["need"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("need"))
+		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["need"] = arg2
+	var arg3 model.Rank
+	if tmp, ok := rawArgs["minRank"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minRank"))
+		arg3, err = ec.unmarshalNRank2LFGbackendᚋgraphᚋmodelᚐRank(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["minRank"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_joinPost_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 model.PlayerInput
-	if tmp, ok := rawArgs["playerInput"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("playerInput"))
+	if tmp, ok := rawArgs["player"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("player"))
 		arg0, err = ec.unmarshalNPlayerInput2LFGbackendᚋgraphᚋmodelᚐPlayerInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["playerInput"] = arg0
+	args["player"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_upsertPlayer_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.PlayerInput
+	if tmp, ok := rawArgs["player"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("player"))
+		arg0, err = ec.unmarshalNPlayerInput2LFGbackendᚋgraphᚋmodelᚐPlayerInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["player"] = arg0
 	return args, nil
 }
 
@@ -345,14 +431,14 @@ func (ec *executionContext) field_Query_getPlayer_args(ctx context.Context, rawA
 	var err error
 	args := map[string]interface{}{}
 	var arg0 model.PlayerInput
-	if tmp, ok := rawArgs["playerInput"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("playerInput"))
+	if tmp, ok := rawArgs["player"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("player"))
 		arg0, err = ec.unmarshalNPlayerInput2LFGbackendᚋgraphᚋmodelᚐPlayerInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["playerInput"] = arg0
+	args["player"] = arg0
 	return args, nil
 }
 
@@ -408,7 +494,7 @@ func (ec *executionContext) _Mutation_upsertPlayer(ctx context.Context, field gr
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpsertPlayer(rctx, fc.Args["playerInput"].(model.PlayerInput))
+		return ec.resolvers.Mutation().UpsertPlayer(rctx, fc.Args["player"].(model.PlayerInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -433,8 +519,6 @@ func (ec *executionContext) fieldContext_Mutation_upsertPlayer(ctx context.Conte
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Player_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Player_name(ctx, field)
 			case "tag":
@@ -481,8 +565,8 @@ func (ec *executionContext) fieldContext_Mutation_upsertPlayer(ctx context.Conte
 	return fc, nil
 }
 
-func (ec *executionContext) _Player_id(ctx context.Context, field graphql.CollectedField, obj *model.Player) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Player_id(ctx, field)
+func (ec *executionContext) _Mutation_createPost(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createPost(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -495,7 +579,7 @@ func (ec *executionContext) _Player_id(ctx context.Context, field graphql.Collec
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		return ec.resolvers.Mutation().CreatePost(rctx, fc.Args["mode"].(model.GameMode), fc.Args["player"].(model.PlayerInput), fc.Args["need"].(int), fc.Args["minRank"].(model.Rank))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -512,15 +596,81 @@ func (ec *executionContext) _Player_id(ctx context.Context, field graphql.Collec
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Player_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_createPost(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "Player",
+		Object:     "Mutation",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createPost_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_joinPost(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_joinPost(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().JoinPost(rctx, fc.Args["player"].(model.PlayerInput), fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_joinPost(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_joinPost_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
 	}
 	return fc, nil
 }
@@ -1152,7 +1302,7 @@ func (ec *executionContext) _Query_getPlayer(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetPlayer(rctx, fc.Args["playerInput"].(model.PlayerInput))
+		return ec.resolvers.Query().GetPlayer(rctx, fc.Args["player"].(model.PlayerInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1177,8 +1327,6 @@ func (ec *executionContext) fieldContext_Query_getPlayer(ctx context.Context, fi
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Player_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Player_name(ctx, field)
 			case "tag":
@@ -3201,6 +3349,24 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "createPost":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createPost(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "joinPost":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_joinPost(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3222,13 +3388,6 @@ func (ec *executionContext) _Player(ctx context.Context, sel ast.SelectionSet, o
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Player")
-		case "id":
-
-			out.Values[i] = ec._Player_id(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		case "name":
 
 			out.Values[i] = ec._Player_name(ctx, field, obj)
@@ -3748,6 +3907,16 @@ func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.S
 	return graphql.WrapContextMarshaler(ctx, res)
 }
 
+func (ec *executionContext) unmarshalNGameMode2LFGbackendᚋgraphᚋmodelᚐGameMode(ctx context.Context, v interface{}) (model.GameMode, error) {
+	var res model.GameMode
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNGameMode2LFGbackendᚋgraphᚋmodelᚐGameMode(ctx context.Context, sel ast.SelectionSet, v model.GameMode) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
 	res, err := graphql.UnmarshalInt(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -3780,6 +3949,16 @@ func (ec *executionContext) marshalNPlayer2ᚖLFGbackendᚋgraphᚋmodelᚐPlaye
 func (ec *executionContext) unmarshalNPlayerInput2LFGbackendᚋgraphᚋmodelᚐPlayerInput(ctx context.Context, v interface{}) (model.PlayerInput, error) {
 	res, err := ec.unmarshalInputPlayerInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNRank2LFGbackendᚋgraphᚋmodelᚐRank(ctx context.Context, v interface{}) (model.Rank, error) {
+	var res model.Rank
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRank2LFGbackendᚋgraphᚋmodelᚐRank(ctx context.Context, sel ast.SelectionSet, v model.Rank) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
