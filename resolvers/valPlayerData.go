@@ -1,6 +1,7 @@
-package main
+package resolvers
 
 import (
+	"LFGbackend/types"
 	"encoding/json"
 	"github.com/Danny-Dasilva/CycleTLS/cycletls"
 	"log"
@@ -14,7 +15,7 @@ func playerKey(name string, tag string) string {
 	return name + "#" + tag
 }
 
-func getPlayerData(name string, tag string) PlayerData {
+func getPlayerData(name string, tag string) types.PlayerData {
 
 	url := "https://tracker.gg/valorant/profile/riot/" + name + "%23" + tag + "/overview"
 
@@ -34,25 +35,25 @@ func getPlayerData(name string, tag string) PlayerData {
 	err = json.Unmarshal([]byte(jsonString), &data)
 	if err != nil {
 		log.Println(err)
-		return PlayerData{}
+		return types.PlayerData{}
 	}
 
 	comp := data.Segments[0]
 
-	compPlayerData := PlayerData{
-		seasonId:            comp.Attributes.SeasonID,
-		playlist:            comp.Attributes.Playlist,
-		rank:                comp.Stats.Rank.Metadata.TierName,
-		iconUrl:             comp.Stats.Rank.Metadata.IconURL,
-		matchesPlayed:       comp.Stats.MatchesPlayed.Value,
-		matchWinPct:         comp.Stats.MatchesWinPct.Value,
-		killsPerMatch:       comp.Stats.KillsPerMatch.Value,
-		kd:                  comp.Stats.KDRatio.Value,
-		kda:                 comp.Stats.KDARatio.Value,
-		dmgPerRound:         comp.Stats.DamagePerRound.Value,
-		headshotPct:         comp.Stats.HeadshotsPercentage.Value,
-		firstBloodsPerMatch: comp.Stats.FirstBloodsPerMatch.Value,
-		firstDeathsPerRound: comp.Stats.FirstDeathsPerRound.Value,
+	compPlayerData := types.PlayerData{
+		SeasonId:            comp.Attributes.SeasonID,
+		Playlist:            comp.Attributes.Playlist,
+		Rank:                comp.Stats.Rank.Metadata.TierName,
+		IconUrl:             comp.Stats.Rank.Metadata.IconURL,
+		MatchesPlayed:       comp.Stats.MatchesPlayed.Value,
+		MatchWinPct:         comp.Stats.MatchesWinPct.Value,
+		KillsPerMatch:       comp.Stats.KillsPerMatch.Value,
+		Kd:                  comp.Stats.KDRatio.Value,
+		Kda:                 comp.Stats.KDARatio.Value,
+		DmgPerRound:         comp.Stats.DamagePerRound.Value,
+		HeadshotPct:         comp.Stats.HeadshotsPercentage.Value,
+		FirstBloodsPerMatch: comp.Stats.FirstBloodsPerMatch.Value,
+		FirstDeathsPerRound: comp.Stats.FirstDeathsPerRound.Value,
 	}
 
 	return compPlayerData

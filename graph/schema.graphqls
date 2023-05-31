@@ -1,0 +1,35 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+
+type Player {
+  id:                  String!
+  name:                String!
+  tag:                 String!
+  rank:                String!
+  iconUrl:             String
+  matchesPlayed:       Int!
+  matchWinPct:         Float!
+  killsPerMatch:       Float!
+  kd:                  Float!
+  kda:                 Float!
+  dmgPerRound:         Float!
+  headshotPct :        Float!
+  firstBloodsPerMatch: Float!
+  firstDeathsPerRound: Float!
+  mostKillsInMatch:    Int!
+}
+
+input PlayerInput {
+  name: String!
+  tag: String!
+}
+
+type Query {
+  getPlayer(playerInput: PlayerInput!): Player!
+}
+
+type Mutation {
+  upsertPlayer(playerInput: PlayerInput!): Player!
+}
