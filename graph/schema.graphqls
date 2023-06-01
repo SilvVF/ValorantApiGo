@@ -20,6 +20,13 @@ type Player {
   mostKillsInMatch:    Int!
 }
 
+type Post {
+  id: String!
+  players: [Player!]!
+  needed: Int!
+  minRank: Rank!,
+}
+
 input PlayerInput {
   name: String!
   tag: String!
@@ -29,13 +36,15 @@ type Query {
   getPlayer(player: PlayerInput!): Player!
 }
 
+type Subscription {
+  joinPost(player: PlayerInput!, id: String!): Post!
+}
+
 type Mutation {
 
   upsertPlayer(player: PlayerInput!): Player!
 
   createPost(mode: GameMode!, player: PlayerInput!, need: Int!, minRank: Rank!): String!
-
-  joinPost(player: PlayerInput!, id: String!): Boolean!
 }
 
 enum GameMode {

@@ -2,7 +2,9 @@ package resolvers
 
 import (
 	"LFGbackend/graph/model"
+	"LFGbackend/src"
 	"context"
+	"errors"
 )
 
 func CreatePostResolver(
@@ -14,6 +16,11 @@ func CreatePostResolver(
 	return "", nil
 }
 
-func JoinPostResolver(ctx context.Context, player model.PlayerInput, id string) (bool, error) {
-	return false, nil
+func JoinPostResolver(ctx context.Context, player model.PlayerInput, id string) (<-chan *model.Post, error) {
+	session := src.SessionContext(ctx)
+	if session != nil {
+		session.PostId = id
+
+	}
+	return nil, errors.New("session id was not initialized")
 }
