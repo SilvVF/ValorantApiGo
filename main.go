@@ -24,10 +24,13 @@ func main() {
 		log.Println(err)
 	}
 
+	server := src.NewServer()
+
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(
 		graph.Config{
 			Resolvers: &graph.Resolver{
-				Db: db,
+				Db:     db,
+				Server: server,
 			},
 		},
 	))

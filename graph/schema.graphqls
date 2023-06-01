@@ -20,11 +20,19 @@ type Player {
   mostKillsInMatch:    Int!
 }
 
+type Message {
+  sender: Player!
+  text: String!
+  sentAt: String!
+}
+
 type Post {
   id: String!
   players: [Player!]!
   needed: Int!
-  minRank: Rank!,
+  minRank: Rank!
+  messages: [Message!]!
+  closed: Boolean!
 }
 
 input PlayerInput {

@@ -8,6 +8,12 @@ import (
 	"strconv"
 )
 
+type Message struct {
+	Sender *Player `json:"sender"`
+	Text   string  `json:"text"`
+	SentAt string  `json:"sentAt"`
+}
+
 type Player struct {
 	Name                string  `json:"name"`
 	Tag                 string  `json:"tag"`
@@ -31,10 +37,11 @@ type PlayerInput struct {
 }
 
 type Post struct {
-	ID      string    `json:"id"`
-	Players []*Player `json:"players"`
-	Needed  int       `json:"needed"`
-	MinRank Rank      `json:"minRank"`
+	ID       string     `json:"id"`
+	Players  []*Player  `json:"players"`
+	Needed   int        `json:"needed"`
+	MinRank  Rank       `json:"minRank"`
+	Messages []*Message `json:"messages"`
 }
 
 type GameMode string

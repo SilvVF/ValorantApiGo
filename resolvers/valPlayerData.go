@@ -15,7 +15,7 @@ func playerKey(name string, tag string) string {
 	return name + "#" + tag
 }
 
-func getPlayerData(name string, tag string) types.PlayerData {
+func getPlayerData(name string, tag string) (types.PlayerData, bool) {
 
 	url := "https://tracker.gg/valorant/profile/riot/" + name + "%23" + tag + "/overview"
 
@@ -32,10 +32,12 @@ func getPlayerData(name string, tag string) types.PlayerData {
 	end := strings.Index(response.Body, "\"availableSegments\"")
 	jsonString := "{" + response.Body[start:end-1] + "}"
 	var data ScrapedPlayerData
+
 	err = json.Unmarshal([]byte(jsonString), &data)
+
 	if err != nil {
 		log.Println(err)
-		return types.PlayerData{}
+		return types.PlayerData{}, false
 	}
 
 	comp := data.Segments[0]
@@ -56,7 +58,7 @@ func getPlayerData(name string, tag string) types.PlayerData {
 		FirstDeathsPerRound: comp.Stats.FirstDeathsPerRound.Value,
 	}
 
-	return compPlayerData
+	return compPlayerData, true
 }
 
 type ScrapedPlayerData struct {

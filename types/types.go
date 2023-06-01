@@ -36,7 +36,17 @@ type LeaveRequest struct {
 
 type PostSession struct {
 	ClientId string
-	PostId   string
+	Player   *model.Player
+}
+
+type UserInfo struct {
+	ClientId string
+	Player   *model.Player
+}
+
+type User struct {
+	Info  UserInfo
+	State chan *model.Post
 }
 
 type GormPlayer struct {

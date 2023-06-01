@@ -17,7 +17,7 @@ func (r *mutationResolver) UpsertPlayer(ctx context.Context, player model.Player
 
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, mode model.GameMode, player model.PlayerInput, need int, minRank model.Rank) (string, error) {
-	return resolvers.CreatePostResolver(ctx, mode, player, need, minRank)
+	return resolvers.CreatePostResolver(ctx, r.Resolver.Server, r.Resolver.Db, mode, player, need, minRank)
 }
 
 // GetPlayer is the resolver for the getPlayer field.
@@ -27,7 +27,7 @@ func (r *queryResolver) GetPlayer(ctx context.Context, player model.PlayerInput)
 
 // JoinPost is the resolver for the joinPost field.
 func (r *subscriptionResolver) JoinPost(ctx context.Context, player model.PlayerInput, id string) (<-chan *model.Post, error) {
-	return resolvers.JoinPostResolver(ctx, player, id)
+	return resolvers.JoinPostResolver(ctx, r.Resolver.Server, r.Resolver.Db, player, id)
 }
 
 // Mutation returns MutationResolver implementation.
