@@ -13,6 +13,14 @@ type Server struct {
 	mutex        sync.Mutex
 }
 
+func NewServer() *Server {
+	return &Server{
+		Posts:        make(map[string]*Post),
+		UserToPostId: make(map[string]string),
+		mutex:        sync.Mutex{},
+	}
+}
+
 func (s *Server) LeavePost(id string, user *types.User) {
 	go func() {
 		post := s.getPostForUser(id)

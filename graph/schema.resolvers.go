@@ -27,7 +27,7 @@ func (r *queryResolver) GetPlayer(ctx context.Context, player model.PlayerInput)
 
 // JoinPost is the resolver for the joinPost field.
 func (r *subscriptionResolver) JoinPost(ctx context.Context, player model.PlayerInput, id string) (<-chan *model.Post, error) {
-	return resolvers.JoinPostResolver(ctx, r.Resolver.Server, r.Resolver.Db, player, id)
+	return resolvers.JoinPostResolver(ctx, r.Resolver.Server, player, id)
 }
 
 // Mutation returns MutationResolver implementation.
