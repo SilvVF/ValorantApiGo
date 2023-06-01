@@ -22,6 +22,23 @@ type PlayerData struct {
 	MostKillsInMatch    int
 }
 
+type JoinRequest struct {
+	Player model.Player
+	PostId string
+	UserId string
+}
+
+type LeaveRequest struct {
+	Player model.Player
+	PostId string
+	UserId string
+}
+
+type PostSession struct {
+	ClientId string
+	PostId   string
+}
+
 type GormPlayer struct {
 	Id        string `gorm:"primaryKey"`
 	CreatedAt time.Time

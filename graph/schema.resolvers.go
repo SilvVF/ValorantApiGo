@@ -12,7 +12,7 @@ import (
 
 // UpsertPlayer is the resolver for the upsertPlayer field.
 func (r *mutationResolver) UpsertPlayer(ctx context.Context, player model.PlayerInput) (*model.Player, error) {
-	return resolvers.UpsertPlayerResolver(ctx, player)
+	return resolvers.UpsertPlayerResolver(r.Resolver.Db, ctx, player)
 }
 
 // CreatePost is the resolver for the createPost field.
@@ -20,14 +20,14 @@ func (r *mutationResolver) CreatePost(ctx context.Context, mode model.GameMode, 
 	return resolvers.CreatePostResolver(ctx, mode, player, need, minRank)
 }
 
-// JoinPost is the resolver for the joinPost field.
-func (r *mutationResolver) JoinPost(ctx context.Context, player model.PlayerInput, id string) (bool, error) {
-	return resolvers.JoinPostResolver(ctx, player, id)
-}
-
 // GetPlayer is the resolver for the getPlayer field.
 func (r *queryResolver) GetPlayer(ctx context.Context, player model.PlayerInput) (*model.Player, error) {
-	return resolvers.GetPlayerResolver(ctx, player)
+	return resolvers.GetPlayerResolver(r.Resolver.Db, ctx, player)
+}
+
+// JoinPost is the resolver for the joinPost field.
+func (r *subscriptionResolver) JoinPost(ctx context.Context, player model.PlayerInput, id string) (<-chan *model.Post, error) {
+	return resolvers.JoinPostResolver(ctx, player, id)
 }
 
 // Mutation returns MutationResolver implementation.
@@ -36,5 +36,9 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// Subscription returns SubscriptionResolver implementation.
+func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
+
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type subscriptionResolver struct{ *Resolver }
