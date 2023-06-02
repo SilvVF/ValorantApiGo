@@ -11,8 +11,12 @@ import (
 
 func GetPlayerResolver(db *gorm.DB, _ context.Context, playerInput model.PlayerInput) (*model.Player, error) {
 	name, tag := playerInput.Name, playerInput.Tag
-	var player = types.GormPlayer{}
-	db.Where("name = ? AND tag = ?", name, tag).First(&player)
+	player := types.GormPlayer{}
+	err := db.First(&player, "id = ?", name+tag).Error
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
 	return &player.Player, nil
 }
 

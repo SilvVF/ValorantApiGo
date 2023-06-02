@@ -50,7 +50,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.Handle("/", src.Middleware(playground.Handler("GraphQL playground", "/query")))
-	mux.Handle("/query", srv)
+	mux.Handle("/query", src.Middleware(srv))
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
