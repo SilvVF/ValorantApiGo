@@ -1,24 +1,57 @@
-package src
+package srv
 
 import (
 	"LFGbackend/graph/model"
 	"LFGbackend/types"
 	"errors"
 	"sync"
+	"time"
 )
 
 type Server struct {
-	Posts        map[string]*Post
-	UserToPostId map[string]string
-	mutex        sync.Mutex
+	Posts            map[string]*Post
+	ClientIdToPostId map[string]string
+	ClientIdToPlayer map[string]*model.Player
+	mutex            sync.Mutex
 }
 
 func NewServer() *Server {
-	return &Server{
-		Posts:        make(map[string]*Post),
-		UserToPostId: make(map[string]string),
-		mutex:        sync.Mutex{},
+
+	server := &Server{
+		Posts:            make(map[string]*Post),
+		ClientIdToPostId: make(map[string]string),
+		ClientIdToPlayer: make(map[string]*model.Player),
+		mutex:            sync.Mutex{},
 	}
+	go func() {
+		for {
+			time.Sleep(time.Hour * 3)
+			for _, p := range server.Posts {
+				if len(p.users) <= 0 || p.Closed {
+					delete(server.Posts, p.Id)
+				}
+			}
+		}
+	}()
+	return server
+}
+
+func (s *Server) CreatePost(post model.Post, clientId string) {
+	ps := &Post{
+		Id:       post.ID,
+		Needed:   post.Needed,
+		MinRank:  post.MinRank,
+		Players:  make([]*model.Player, 0),
+		Messages: make([]*model.Message, 0),
+		users:    make(map[string]*types.User),
+		mutex:    sync.Mutex{},
+		creator:  clientId,
+	}
+	s.Posts[post.ID] = ps
+}
+
+func (s *Server) DeletePlayer(session *types.PostSession) {
+	delete(s.ClientIdToPlayer, session.ClientId)
 }
 
 func (s *Server) LeavePost(id string, user *types.User) {
@@ -27,7 +60,10 @@ func (s *Server) LeavePost(id string, user *types.User) {
 		if post != nil {
 			post.Leave(user)
 			s.mutex.Lock()
-			delete(s.UserToPostId, user.Info.ClientId)
+			delete(s.ClientIdToPostId, user.Info.ClientId)
+			if len(post.Players) <= 0 {
+				delete(s.Posts, post.Id)
+			}
 			s.mutex.Unlock()
 		}
 	}()
@@ -49,7 +85,7 @@ func (s *Server) JoinPost(id string, user *types.User) error {
 
 func (s *Server) getPostForUser(id string) *Post {
 	s.mutex.Lock()
-	postId, ok := s.UserToPostId[id]
+	postId, ok := s.ClientIdToPostId[id]
 	s.mutex.Unlock()
 	if !ok {
 		return nil
@@ -63,6 +99,8 @@ type Post struct {
 	MinRank  model.Rank
 	Players  []*model.Player
 	Messages []*model.Message
+	Closed   bool
+	creator  string
 	users    map[string]*types.User
 	mutex    sync.Mutex
 }
@@ -113,6 +151,13 @@ func (p *Post) Leave(leaver *types.User) {
 }
 
 func (p *Post) broadcastState() {
+	creatorHere := false
+	for _, user := range p.users {
+		if user.Info.ClientId == p.creator {
+			creatorHere = true
+			p.Closed = true
+		}
+	}
 	p.mutex.Lock()
 	for _, user := range p.users {
 		user.State <- &model.Post{
@@ -121,6 +166,7 @@ func (p *Post) broadcastState() {
 			Needed:   p.Needed,
 			MinRank:  p.MinRank,
 			Messages: p.Messages,
+			Closed:   len(p.users) > 0 || !creatorHere,
 		}
 	}
 	p.mutex.Unlock()

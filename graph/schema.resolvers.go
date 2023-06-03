@@ -10,24 +10,34 @@ import (
 	"context"
 )
 
-// UpsertPlayer is the resolver for the upsertPlayer field.
-func (r *mutationResolver) UpsertPlayer(ctx context.Context, player model.PlayerInput) (*model.Player, error) {
-	return resolvers.UpsertPlayerResolver(r.Resolver.Db, ctx, player)
+// SignInAsPlayer is the resolver for the signInAsPlayer field.
+func (r *mutationResolver) SignInAsPlayer(ctx context.Context, player model.PlayerInput) (*model.Player, error) {
+	return resolvers.UpsertPlayerResolver(r.Server, r.Db, ctx, player)
 }
 
-// CreatePost is the resolver for the createPost field.
-func (r *mutationResolver) CreatePost(ctx context.Context, mode model.GameMode, player model.PlayerInput, need int, minRank model.Rank) (string, error) {
-	return resolvers.CreatePostResolver(ctx, r.Resolver.Server, r.Resolver.Db, mode, player, need, minRank)
+// SendMessage is the resolver for the sendMessage field.
+func (r *mutationResolver) SendMessage(ctx context.Context, text string) (bool, error) {
+	return resolvers.SendMessageResolver(text, ctx, r.Server)
 }
 
-// GetPlayer is the resolver for the getPlayer field.
-func (r *queryResolver) GetPlayer(ctx context.Context, player model.PlayerInput) (*model.Player, error) {
-	return resolvers.GetPlayerResolver(r.Resolver.Db, ctx, player)
+// GetPlayers is the resolver for the getPlayers field.
+func (r *queryResolver) GetPlayers(ctx context.Context, players []*model.PlayerInput) ([]*model.Player, error) {
+	return resolvers.GetPlayerResolver(r.Db, ctx, players)
+}
+
+// GetPosts is the resolver for the getPosts field.
+func (r *queryResolver) GetPosts(ctx context.Context, page int, count int) ([]*model.PostInfo, error) {
+	return resolvers.GetPostsResolver(r.Server, ctx, page, count)
 }
 
 // JoinPost is the resolver for the joinPost field.
 func (r *subscriptionResolver) JoinPost(ctx context.Context, player model.PlayerInput, id string) (<-chan *model.Post, error) {
-	return resolvers.JoinPostResolver(ctx, r.Resolver.Server, player, id)
+	return resolvers.JoinPostResolver(ctx, r.Server, player, id)
+}
+
+// CreatePost is the resolver for the createPost field.
+func (r *subscriptionResolver) CreatePost(ctx context.Context, mode model.GameMode, player model.PlayerInput, need int, minRank model.Rank) (<-chan *model.Post, error) {
+	return resolvers.CreatePostResolver(ctx, r.Server, r.Db, mode, player, need, minRank)
 }
 
 // Mutation returns MutationResolver implementation.

@@ -15,20 +15,39 @@ type Message struct {
 }
 
 type Player struct {
-	Name                string  `json:"name"`
-	Tag                 string  `json:"tag"`
-	Rank                string  `json:"rank"`
-	IconURL             *string `json:"iconUrl,omitempty"`
-	MatchesPlayed       int     `json:"matchesPlayed"`
-	MatchWinPct         float64 `json:"matchWinPct"`
-	KillsPerMatch       float64 `json:"killsPerMatch"`
-	Kd                  float64 `json:"kd"`
-	Kda                 float64 `json:"kda"`
-	DmgPerRound         float64 `json:"dmgPerRound"`
-	HeadshotPct         float64 `json:"headshotPct"`
-	FirstBloodsPerMatch float64 `json:"firstBloodsPerMatch"`
-	FirstDeathsPerRound float64 `json:"firstDeathsPerRound"`
-	MostKillsInMatch    int     `json:"mostKillsInMatch"`
+	Name                    string  `json:"name"`
+	Tag                     string  `json:"tag"`
+	SeasonID                string  `json:"seasonId"`
+	SeasonName              string  `json:"seasonName"`
+	Playlist                string  `json:"playlist"`
+	Rank                    string  `json:"rank"`
+	IconURL                 string  `json:"iconUrl"`
+	MatchesPlayed           int     `json:"matchesPlayed"`
+	MatchWinPct             float64 `json:"matchWinPct"`
+	Kills                   int     `json:"kills"`
+	KillsPercentile         float64 `json:"killsPercentile"`
+	KillsPerRound           float64 `json:"killsPerRound"`
+	KillsPerMatch           float64 `json:"killsPerMatch"`
+	ScorePerRound           float64 `json:"scorePerRound"`
+	ScorePerRoundPercentile float64 `json:"scorePerRoundPercentile"`
+	Assists                 int     `json:"assists"`
+	AssistsPerRound         float64 `json:"assistsPerRound"`
+	AssistsPerMatch         float64 `json:"assistsPerMatch"`
+	Kd                      float64 `json:"kd"`
+	KdPercentile            float64 `json:"kdPercentile"`
+	Kda                     float64 `json:"kda"`
+	DmgPerRound             float64 `json:"dmgPerRound"`
+	HeadshotPct             float64 `json:"headshotPct"`
+	HeadshotPctPercentile   float64 `json:"headshotPctPercentile"`
+	EconRating              float64 `json:"econRating"`
+	FirstBloodsPerMatch     float64 `json:"firstBloodsPerMatch"`
+	FirstDeathsPerRound     float64 `json:"firstDeathsPerRound"`
+	MostKillsInMatch        int     `json:"mostKillsInMatch"`
+	TimePlayed              int     `json:"timePlayed"`
+	TrnPerformanceScore     float64 `json:"trnPerformanceScore"`
+	PeakRank                string  `json:"peakRank"`
+	PeakRankIconURL         string  `json:"peakRankIconUrl"`
+	PeakRankActName         string  `json:"peakRankActName"`
 }
 
 type PlayerInput struct {
@@ -42,6 +61,15 @@ type Post struct {
 	Needed   int        `json:"needed"`
 	MinRank  Rank       `json:"minRank"`
 	Messages []*Message `json:"messages"`
+	Closed   bool       `json:"closed"`
+}
+
+type PostInfo struct {
+	ID          string   `json:"id"`
+	PlayerNames []string `json:"playerNames"`
+	Needed      int      `json:"needed"`
+	MinRank     Rank     `json:"minRank"`
+	Closed      bool     `json:"closed"`
 }
 
 type GameMode string

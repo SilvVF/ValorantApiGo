@@ -1,7 +1,7 @@
 package graph
 
 import (
-	"LFGbackend/src"
+	"LFGbackend/srv"
 	"gorm.io/gorm"
 )
 
@@ -11,5 +11,5 @@ import (
 
 type Resolver struct {
 	Db     *gorm.DB
-	Server *src.Server
+	Server *srv.Server
 }

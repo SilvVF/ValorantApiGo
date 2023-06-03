@@ -11,10 +11,6 @@ import (
 
 var client = cycletls.Init()
 
-func playerKey(name string, tag string) string {
-	return name + "#" + tag
-}
-
 func getPlayerData(name string, tag string) (types.PlayerData, bool) {
 
 	url := "https://tracker.gg/valorant/profile/riot/" + name + "%23" + tag + "/overview"
@@ -43,19 +39,37 @@ func getPlayerData(name string, tag string) (types.PlayerData, bool) {
 	comp := data.Segments[0]
 
 	compPlayerData := types.PlayerData{
-		SeasonId:            comp.Attributes.SeasonID,
-		Playlist:            comp.Attributes.Playlist,
-		Rank:                comp.Stats.Rank.Metadata.TierName,
-		IconUrl:             comp.Stats.Rank.Metadata.IconURL,
-		MatchesPlayed:       comp.Stats.MatchesPlayed.Value,
-		MatchWinPct:         comp.Stats.MatchesWinPct.Value,
-		KillsPerMatch:       comp.Stats.KillsPerMatch.Value,
-		Kd:                  comp.Stats.KDRatio.Value,
-		Kda:                 comp.Stats.KDARatio.Value,
-		DmgPerRound:         comp.Stats.DamagePerRound.Value,
-		HeadshotPct:         comp.Stats.HeadshotsPercentage.Value,
-		FirstBloodsPerMatch: comp.Stats.FirstBloodsPerMatch.Value,
-		FirstDeathsPerRound: comp.Stats.FirstDeathsPerRound.Value,
+		SeasonId:                comp.Attributes.SeasonID,
+		SeasonName:              comp.Metadata.Name,
+		Playlist:                comp.Attributes.Playlist,
+		Rank:                    comp.Stats.Rank.Metadata.TierName,
+		IconUrl:                 comp.Stats.Rank.Metadata.IconURL,
+		MatchesPlayed:           comp.Stats.MatchesPlayed.Value,
+		MatchWinPct:             comp.Stats.MatchesWinPct.Value,
+		Kills:                   comp.Stats.Kills.Value,
+		KillsPercentile:         comp.Stats.Kills.Percentile,
+		KillsPerRound:           comp.Stats.KillsPerRound.Value,
+		KillsPerMatch:           comp.Stats.KillsPerMatch.Value,
+		ScorePerRound:           comp.Stats.ScorePerRound.Value,
+		ScorePerRoundPercentile: comp.Stats.ScorePerRound.Percentile,
+		Assists:                 comp.Stats.Assists.Value,
+		AssistsPerRound:         comp.Stats.AssistsPerRound.Value,
+		AssistsPerMatch:         comp.Stats.AssistsPerMatch.Value,
+		Kd:                      comp.Stats.KDRatio.Value,
+		KdPercentile:            comp.Stats.KDRatio.Percentile,
+		Kda:                     comp.Stats.KDARatio.Value,
+		DmgPerRound:             comp.Stats.DamagePerRound.Value,
+		HeadshotPct:             comp.Stats.HeadshotsPercentage.Value,
+		HeadshotPctPercentile:   comp.Stats.HeadshotsPercentage.Percentile,
+		EconRating:              comp.Stats.EconRating.Value,
+		FirstBloodsPerMatch:     comp.Stats.FirstBloodsPerMatch.Value,
+		FirstDeathsPerRound:     comp.Stats.FirstDeathsPerRound.Value,
+		MostKillsInMatch:        comp.Stats.MostKillsInMatch.Value,
+		TimePlayed:              comp.Stats.TimePlayed.Value,
+		TrnPerformanceScore:     comp.Stats.TrnPerformanceScore.Value,
+		PeakRank:                comp.Stats.PeakRank.Metadata.TierName,
+		PeakRankIconUrl:         comp.Stats.PeakRank.Metadata.IconURL,
+		PeakRankActName:         comp.Stats.PeakRank.Metadata.ActName,
 	}
 
 	return compPlayerData, true

@@ -4,20 +4,39 @@
 
 
 type Player {
-  name:                String!
-  tag:                 String!
-  rank:                String!
-  iconUrl:             String
-  matchesPlayed:       Int!
-  matchWinPct:         Float!
-  killsPerMatch:       Float!
-  kd:                  Float!
-  kda:                 Float!
-  dmgPerRound:         Float!
-  headshotPct :        Float!
-  firstBloodsPerMatch: Float!
-  firstDeathsPerRound: Float!
-  mostKillsInMatch:    Int!
+  name: String!
+  tag: String!
+  seasonId :           String!
+  seasonName:			String!
+  playlist   :         String!
+  rank        :        String!
+  iconUrl      :       String!
+  matchesPlayed :     Int!
+  matchWinPct       :  Float!
+  kills				:Int!
+  killsPercentile		:Float!
+  killsPerRound       :Float!
+  killsPerMatch       :Float!
+  scorePerRound       :Float!
+  scorePerRoundPercentile :Float!
+  assists	:		    Int!
+  assistsPerRound		:Float!
+  assistsPerMatch     :Float!
+  kd                  :Float!
+  kdPercentile		:Float!
+  kda                 :Float!
+  dmgPerRound         :Float!
+  headshotPct         :Float!
+  headshotPctPercentile :Float!
+  econRating			:Float!
+  firstBloodsPerMatch :Float!
+  firstDeathsPerRound :Float!
+  mostKillsInMatch   : Int!
+  timePlayed   		: Int!
+  trnPerformanceScore :Float!
+  peakRank	:		String!
+  peakRankIconUrl:		String!
+  peakRankActName :    String!
 }
 
 type Message {
@@ -35,24 +54,34 @@ type Post {
   closed: Boolean!
 }
 
+type PostInfo {
+  id: String!
+  playerNames: [String!]!
+  needed: Int!
+  minRank: Rank!
+  closed: Boolean!
+}
+
 input PlayerInput {
   name: String!
   tag: String!
 }
 
 type Query {
-  getPlayer(player: PlayerInput!): Player!
+  getPlayers(players: [PlayerInput!]!): [Player!]!
+  getPosts(page: Int!, count: Int!): [PostInfo!]!
 }
 
 type Subscription {
   joinPost(player: PlayerInput!, id: String!): Post!
+  createPost(mode: GameMode!, player: PlayerInput!, need: Int!, minRank: Rank!): Post!
 }
 
 type Mutation {
 
-  upsertPlayer(player: PlayerInput!): Player!
+  signInAsPlayer(player: PlayerInput!): Player!
 
-  createPost(mode: GameMode!, player: PlayerInput!, need: Int!, minRank: Rank!): String!
+  sendMessage(text: String!): Boolean!
 }
 
 enum GameMode {

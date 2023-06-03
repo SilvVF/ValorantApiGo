@@ -2,7 +2,7 @@ package main
 
 import (
 	"LFGbackend/graph"
-	"LFGbackend/src"
+	"LFGbackend/srv"
 	"LFGbackend/types"
 	"fmt"
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -36,9 +36,10 @@ func main() {
 		log.Println(err)
 	}
 
-	server := src.NewServer()
+	server := srv.NewServer()
+	sessions := make(map[string]*types.PostSession)
 
-	srv := handler.NewDefaultServer(graph.NewExecutableSchema(
+	s := handler.NewDefaultServer(graph.NewExecutableSchema(
 		graph.Config{
 			Resolvers: &graph.Resolver{
 				Db:     db,
@@ -46,11 +47,11 @@ func main() {
 			},
 		},
 	))
-	srv.AddTransport(&transport.Websocket{})
+	s.AddTransport(&transport.Websocket{})
 	mux := http.NewServeMux()
 
-	mux.Handle("/", src.Middleware(playground.Handler("GraphQL playground", "/query")))
-	mux.Handle("/query", src.Middleware(srv))
+	mux.Handle("/", srv.Middleware(server, sessions, playground.Handler("GraphQL playground", "/query")))
+	mux.Handle("/query", srv.Middleware(server, sessions, s))
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
