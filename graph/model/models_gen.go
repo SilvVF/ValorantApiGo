@@ -9,9 +9,9 @@ import (
 )
 
 type Message struct {
-	Sender *Player `json:"sender"`
-	Text   string  `json:"text"`
-	SentAt string  `json:"sentAt"`
+	Sender string `json:"sender"`
+	Text   string `json:"text"`
+	SentAt string `json:"sentAt"`
 }
 
 type Player struct {
@@ -56,20 +56,11 @@ type PlayerInput struct {
 }
 
 type Post struct {
-	ID       string     `json:"id"`
-	Players  []*Player  `json:"players"`
-	Needed   int        `json:"needed"`
-	MinRank  Rank       `json:"minRank"`
-	Messages []*Message `json:"messages"`
-	Closed   bool       `json:"closed"`
-}
-
-type PostInfo struct {
-	ID          string   `json:"id"`
-	PlayerNames []string `json:"playerNames"`
-	Needed      int      `json:"needed"`
-	MinRank     Rank     `json:"minRank"`
-	Closed      bool     `json:"closed"`
+	ID       string   `json:"id"`
+	Players  []string `json:"players"`
+	Needed   int      `json:"needed"`
+	MinRank  Rank     `json:"minRank"`
+	GameMode GameMode `json:"gameMode"`
 }
 
 type GameMode string

@@ -1,4 +1,4 @@
-package resolvers
+package trn
 
 import (
 	"LFGbackend/types"
@@ -11,7 +11,7 @@ import (
 
 var client = cycletls.Init()
 
-func getPlayerData(name string, tag string) (types.PlayerData, bool) {
+func GetPlayerData(name string, tag string) (types.PlayerData, bool) {
 
 	url := "https://tracker.gg/valorant/profile/riot/" + name + "%23" + tag + "/overview"
 

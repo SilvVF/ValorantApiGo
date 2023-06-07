@@ -2,12 +2,16 @@ package main
 
 import (
 	"LFGbackend/graph"
-	"LFGbackend/srv"
+	"LFGbackend/lfg"
+	"LFGbackend/middleware"
 	"LFGbackend/types"
+	"context"
 	"fmt"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/gorilla/mux"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -17,7 +21,6 @@ import (
 )
 
 func main() {
-
 	dsn := fmt.Sprintf(
 		"host=db user=%s password=%s dbname=%s port=5432 sslmode=disable TimeZone=Asia/Shanghai",
 		os.Getenv("DB_USER"),
@@ -31,27 +34,43 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to connect to db. \n", err)
 	}
+
 	err = db.AutoMigrate(&types.GormPlayer{})
 	if err != nil {
 		log.Println(err)
 	}
 
-	server := srv.NewServer()
-	sessions := make(map[string]*types.PostSession)
+	router := mux.NewRouter()
+	lfgServer := lfg.NewLfgServer()
 
-	s := handler.NewDefaultServer(graph.NewExecutableSchema(
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
+	router.Use(middleware.Middleware())
+
+	graphqlServer := handler.NewDefaultServer(graph.NewExecutableSchema(
 		graph.Config{
 			Resolvers: &graph.Resolver{
 				Db:     db,
-				Server: server,
+				Client: client,
+				Server: lfgServer,
 			},
 		},
 	))
-	s.AddTransport(&transport.Websocket{})
-	mux := http.NewServeMux()
 
-	mux.Handle("/", srv.Middleware(server, sessions, playground.Handler("GraphQL playground", "/query")))
-	mux.Handle("/query", srv.Middleware(server, sessions, s))
+	graphqlServer.AddTransport(&transport.Websocket{})
 
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	ctx := context.Background()
+
+	router.HandleFunc(
+		"/",
+		playground.Handler("playground", "/graphql"),
+	)
+	router.Handle("/graphql", graphqlServer)
+	router.HandleFunc("/post/{id}", websocketHandler(ctx, client, lfgServer))
+
+	log.Fatal(http.ListenAndServe(":8080", router))
 }

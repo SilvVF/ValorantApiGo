@@ -9,7 +9,6 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"io"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -40,7 +39,6 @@ type Config struct {
 type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
-	Subscription() SubscriptionResolver
 }
 
 type DirectiveRoot struct {
@@ -95,30 +93,16 @@ type ComplexityRoot struct {
 	}
 
 	Post struct {
-		Closed   func(childComplexity int) int
+		GameMode func(childComplexity int) int
 		ID       func(childComplexity int) int
-		Messages func(childComplexity int) int
 		MinRank  func(childComplexity int) int
 		Needed   func(childComplexity int) int
 		Players  func(childComplexity int) int
 	}
 
-	PostInfo struct {
-		Closed      func(childComplexity int) int
-		ID          func(childComplexity int) int
-		MinRank     func(childComplexity int) int
-		Needed      func(childComplexity int) int
-		PlayerNames func(childComplexity int) int
-	}
-
 	Query struct {
 		GetPlayers func(childComplexity int, players []*model.PlayerInput) int
-		GetPosts   func(childComplexity int, page int, count int) int
-	}
-
-	Subscription struct {
-		CreatePost func(childComplexity int, mode model.GameMode, player model.PlayerInput, need int, minRank model.Rank) int
-		JoinPost   func(childComplexity int, player model.PlayerInput, id string) int
+		GetPosts   func(childComplexity int, count int) int
 	}
 }
 
@@ -128,11 +112,7 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	GetPlayers(ctx context.Context, players []*model.PlayerInput) ([]*model.Player, error)
-	GetPosts(ctx context.Context, page int, count int) ([]*model.PostInfo, error)
-}
-type SubscriptionResolver interface {
-	JoinPost(ctx context.Context, player model.PlayerInput, id string) (<-chan *model.Post, error)
-	CreatePost(ctx context.Context, mode model.GameMode, player model.PlayerInput, need int, minRank model.Rank) (<-chan *model.Post, error)
+	GetPosts(ctx context.Context, count int) ([]*model.Post, error)
 }
 
 type executableSchema struct {
@@ -426,12 +406,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Player.TrnPerformanceScore(childComplexity), true
 
-	case "Post.closed":
-		if e.complexity.Post.Closed == nil {
+	case "Post.gameMode":
+		if e.complexity.Post.GameMode == nil {
 			break
 		}
 
-		return e.complexity.Post.Closed(childComplexity), true
+		return e.complexity.Post.GameMode(childComplexity), true
 
 	case "Post.id":
 		if e.complexity.Post.ID == nil {
@@ -439,13 +419,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Post.ID(childComplexity), true
-
-	case "Post.messages":
-		if e.complexity.Post.Messages == nil {
-			break
-		}
-
-		return e.complexity.Post.Messages(childComplexity), true
 
 	case "Post.minRank":
 		if e.complexity.Post.MinRank == nil {
@@ -467,41 +440,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Post.Players(childComplexity), true
-
-	case "PostInfo.closed":
-		if e.complexity.PostInfo.Closed == nil {
-			break
-		}
-
-		return e.complexity.PostInfo.Closed(childComplexity), true
-
-	case "PostInfo.id":
-		if e.complexity.PostInfo.ID == nil {
-			break
-		}
-
-		return e.complexity.PostInfo.ID(childComplexity), true
-
-	case "PostInfo.minRank":
-		if e.complexity.PostInfo.MinRank == nil {
-			break
-		}
-
-		return e.complexity.PostInfo.MinRank(childComplexity), true
-
-	case "PostInfo.needed":
-		if e.complexity.PostInfo.Needed == nil {
-			break
-		}
-
-		return e.complexity.PostInfo.Needed(childComplexity), true
-
-	case "PostInfo.playerNames":
-		if e.complexity.PostInfo.PlayerNames == nil {
-			break
-		}
-
-		return e.complexity.PostInfo.PlayerNames(childComplexity), true
 
 	case "Query.getPlayers":
 		if e.complexity.Query.GetPlayers == nil {
@@ -525,31 +463,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.GetPosts(childComplexity, args["page"].(int), args["count"].(int)), true
-
-	case "Subscription.createPost":
-		if e.complexity.Subscription.CreatePost == nil {
-			break
-		}
-
-		args, err := ec.field_Subscription_createPost_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Subscription.CreatePost(childComplexity, args["mode"].(model.GameMode), args["player"].(model.PlayerInput), args["need"].(int), args["minRank"].(model.Rank)), true
-
-	case "Subscription.joinPost":
-		if e.complexity.Subscription.JoinPost == nil {
-			break
-		}
-
-		args, err := ec.field_Subscription_joinPost_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Subscription.JoinPost(childComplexity, args["player"].(model.PlayerInput), args["id"].(string)), true
+		return e.complexity.Query.GetPosts(childComplexity, args["count"].(int)), true
 
 	}
 	return 0, false
@@ -588,23 +502,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
 			data := ec._Mutation(ctx, rc.Operation.SelectionSet)
 			var buf bytes.Buffer
-			data.MarshalGQL(&buf)
-
-			return &graphql.Response{
-				Data: buf.Bytes(),
-			}
-		}
-	case ast.Subscription:
-		next := ec._Subscription(ctx, rc.Operation.SelectionSet)
-
-		var buf bytes.Buffer
-		return func(ctx context.Context) *graphql.Response {
-			buf.Reset()
-			data := next(ctx)
-
-			if data == nil {
-				return nil
-			}
 			data.MarshalGQL(&buf)
 
 			return &graphql.Response{
@@ -720,89 +617,14 @@ func (ec *executionContext) field_Query_getPosts_args(ctx context.Context, rawAr
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int
-	if tmp, ok := rawArgs["page"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+	if tmp, ok := rawArgs["count"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
 		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["page"] = arg0
-	var arg1 int
-	if tmp, ok := rawArgs["count"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
-		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["count"] = arg1
-	return args, nil
-}
-
-func (ec *executionContext) field_Subscription_createPost_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.GameMode
-	if tmp, ok := rawArgs["mode"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mode"))
-		arg0, err = ec.unmarshalNGameMode2LFGbackendᚋgraphᚋmodelᚐGameMode(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["mode"] = arg0
-	var arg1 model.PlayerInput
-	if tmp, ok := rawArgs["player"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("player"))
-		arg1, err = ec.unmarshalNPlayerInput2LFGbackendᚋgraphᚋmodelᚐPlayerInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["player"] = arg1
-	var arg2 int
-	if tmp, ok := rawArgs["need"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("need"))
-		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["need"] = arg2
-	var arg3 model.Rank
-	if tmp, ok := rawArgs["minRank"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minRank"))
-		arg3, err = ec.unmarshalNRank2LFGbackendᚋgraphᚋmodelᚐRank(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["minRank"] = arg3
-	return args, nil
-}
-
-func (ec *executionContext) field_Subscription_joinPost_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.PlayerInput
-	if tmp, ok := rawArgs["player"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("player"))
-		arg0, err = ec.unmarshalNPlayerInput2LFGbackendᚋgraphᚋmodelᚐPlayerInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["player"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["id"] = arg1
+	args["count"] = arg0
 	return args, nil
 }
 
@@ -870,9 +692,9 @@ func (ec *executionContext) _Message_sender(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Player)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNPlayer2ᚖLFGbackendᚋgraphᚋmodelᚐPlayer(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Message_sender(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -882,75 +704,7 @@ func (ec *executionContext) fieldContext_Message_sender(ctx context.Context, fie
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "name":
-				return ec.fieldContext_Player_name(ctx, field)
-			case "tag":
-				return ec.fieldContext_Player_tag(ctx, field)
-			case "seasonId":
-				return ec.fieldContext_Player_seasonId(ctx, field)
-			case "seasonName":
-				return ec.fieldContext_Player_seasonName(ctx, field)
-			case "playlist":
-				return ec.fieldContext_Player_playlist(ctx, field)
-			case "rank":
-				return ec.fieldContext_Player_rank(ctx, field)
-			case "iconUrl":
-				return ec.fieldContext_Player_iconUrl(ctx, field)
-			case "matchesPlayed":
-				return ec.fieldContext_Player_matchesPlayed(ctx, field)
-			case "matchWinPct":
-				return ec.fieldContext_Player_matchWinPct(ctx, field)
-			case "kills":
-				return ec.fieldContext_Player_kills(ctx, field)
-			case "killsPercentile":
-				return ec.fieldContext_Player_killsPercentile(ctx, field)
-			case "killsPerRound":
-				return ec.fieldContext_Player_killsPerRound(ctx, field)
-			case "killsPerMatch":
-				return ec.fieldContext_Player_killsPerMatch(ctx, field)
-			case "scorePerRound":
-				return ec.fieldContext_Player_scorePerRound(ctx, field)
-			case "scorePerRoundPercentile":
-				return ec.fieldContext_Player_scorePerRoundPercentile(ctx, field)
-			case "assists":
-				return ec.fieldContext_Player_assists(ctx, field)
-			case "assistsPerRound":
-				return ec.fieldContext_Player_assistsPerRound(ctx, field)
-			case "assistsPerMatch":
-				return ec.fieldContext_Player_assistsPerMatch(ctx, field)
-			case "kd":
-				return ec.fieldContext_Player_kd(ctx, field)
-			case "kdPercentile":
-				return ec.fieldContext_Player_kdPercentile(ctx, field)
-			case "kda":
-				return ec.fieldContext_Player_kda(ctx, field)
-			case "dmgPerRound":
-				return ec.fieldContext_Player_dmgPerRound(ctx, field)
-			case "headshotPct":
-				return ec.fieldContext_Player_headshotPct(ctx, field)
-			case "headshotPctPercentile":
-				return ec.fieldContext_Player_headshotPctPercentile(ctx, field)
-			case "econRating":
-				return ec.fieldContext_Player_econRating(ctx, field)
-			case "firstBloodsPerMatch":
-				return ec.fieldContext_Player_firstBloodsPerMatch(ctx, field)
-			case "firstDeathsPerRound":
-				return ec.fieldContext_Player_firstDeathsPerRound(ctx, field)
-			case "mostKillsInMatch":
-				return ec.fieldContext_Player_mostKillsInMatch(ctx, field)
-			case "timePlayed":
-				return ec.fieldContext_Player_timePlayed(ctx, field)
-			case "trnPerformanceScore":
-				return ec.fieldContext_Player_trnPerformanceScore(ctx, field)
-			case "peakRank":
-				return ec.fieldContext_Player_peakRank(ctx, field)
-			case "peakRankIconUrl":
-				return ec.fieldContext_Player_peakRankIconUrl(ctx, field)
-			case "peakRankActName":
-				return ec.fieldContext_Player_peakRankActName(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Player", field.Name)
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2744,9 +2498,9 @@ func (ec *executionContext) _Post_players(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Player)
+	res := resTmp.([]string)
 	fc.Result = res
-	return ec.marshalNPlayer2ᚕᚖLFGbackendᚋgraphᚋmodelᚐPlayerᚄ(ctx, field.Selections, res)
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Post_players(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2756,75 +2510,7 @@ func (ec *executionContext) fieldContext_Post_players(ctx context.Context, field
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "name":
-				return ec.fieldContext_Player_name(ctx, field)
-			case "tag":
-				return ec.fieldContext_Player_tag(ctx, field)
-			case "seasonId":
-				return ec.fieldContext_Player_seasonId(ctx, field)
-			case "seasonName":
-				return ec.fieldContext_Player_seasonName(ctx, field)
-			case "playlist":
-				return ec.fieldContext_Player_playlist(ctx, field)
-			case "rank":
-				return ec.fieldContext_Player_rank(ctx, field)
-			case "iconUrl":
-				return ec.fieldContext_Player_iconUrl(ctx, field)
-			case "matchesPlayed":
-				return ec.fieldContext_Player_matchesPlayed(ctx, field)
-			case "matchWinPct":
-				return ec.fieldContext_Player_matchWinPct(ctx, field)
-			case "kills":
-				return ec.fieldContext_Player_kills(ctx, field)
-			case "killsPercentile":
-				return ec.fieldContext_Player_killsPercentile(ctx, field)
-			case "killsPerRound":
-				return ec.fieldContext_Player_killsPerRound(ctx, field)
-			case "killsPerMatch":
-				return ec.fieldContext_Player_killsPerMatch(ctx, field)
-			case "scorePerRound":
-				return ec.fieldContext_Player_scorePerRound(ctx, field)
-			case "scorePerRoundPercentile":
-				return ec.fieldContext_Player_scorePerRoundPercentile(ctx, field)
-			case "assists":
-				return ec.fieldContext_Player_assists(ctx, field)
-			case "assistsPerRound":
-				return ec.fieldContext_Player_assistsPerRound(ctx, field)
-			case "assistsPerMatch":
-				return ec.fieldContext_Player_assistsPerMatch(ctx, field)
-			case "kd":
-				return ec.fieldContext_Player_kd(ctx, field)
-			case "kdPercentile":
-				return ec.fieldContext_Player_kdPercentile(ctx, field)
-			case "kda":
-				return ec.fieldContext_Player_kda(ctx, field)
-			case "dmgPerRound":
-				return ec.fieldContext_Player_dmgPerRound(ctx, field)
-			case "headshotPct":
-				return ec.fieldContext_Player_headshotPct(ctx, field)
-			case "headshotPctPercentile":
-				return ec.fieldContext_Player_headshotPctPercentile(ctx, field)
-			case "econRating":
-				return ec.fieldContext_Player_econRating(ctx, field)
-			case "firstBloodsPerMatch":
-				return ec.fieldContext_Player_firstBloodsPerMatch(ctx, field)
-			case "firstDeathsPerRound":
-				return ec.fieldContext_Player_firstDeathsPerRound(ctx, field)
-			case "mostKillsInMatch":
-				return ec.fieldContext_Player_mostKillsInMatch(ctx, field)
-			case "timePlayed":
-				return ec.fieldContext_Player_timePlayed(ctx, field)
-			case "trnPerformanceScore":
-				return ec.fieldContext_Player_trnPerformanceScore(ctx, field)
-			case "peakRank":
-				return ec.fieldContext_Player_peakRank(ctx, field)
-			case "peakRankIconUrl":
-				return ec.fieldContext_Player_peakRankIconUrl(ctx, field)
-			case "peakRankActName":
-				return ec.fieldContext_Player_peakRankActName(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Player", field.Name)
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2918,8 +2604,8 @@ func (ec *executionContext) fieldContext_Post_minRank(ctx context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Post_messages(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Post_messages(ctx, field)
+func (ec *executionContext) _Post_gameMode(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Post_gameMode(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2932,7 +2618,7 @@ func (ec *executionContext) _Post_messages(ctx context.Context, field graphql.Co
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Messages, nil
+		return obj.GameMode, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2944,291 +2630,19 @@ func (ec *executionContext) _Post_messages(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Message)
+	res := resTmp.(model.GameMode)
 	fc.Result = res
-	return ec.marshalNMessage2ᚕᚖLFGbackendᚋgraphᚋmodelᚐMessageᚄ(ctx, field.Selections, res)
+	return ec.marshalNGameMode2LFGbackendᚋgraphᚋmodelᚐGameMode(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Post_messages(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Post_gameMode(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Post",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "sender":
-				return ec.fieldContext_Message_sender(ctx, field)
-			case "text":
-				return ec.fieldContext_Message_text(ctx, field)
-			case "sentAt":
-				return ec.fieldContext_Message_sentAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Message", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Post_closed(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Post_closed(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Closed, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Post_closed(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Post",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _PostInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.PostInfo) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PostInfo_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_PostInfo_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "PostInfo",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _PostInfo_playerNames(ctx context.Context, field graphql.CollectedField, obj *model.PostInfo) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PostInfo_playerNames(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PlayerNames, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]string)
-	fc.Result = res
-	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_PostInfo_playerNames(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "PostInfo",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _PostInfo_needed(ctx context.Context, field graphql.CollectedField, obj *model.PostInfo) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PostInfo_needed(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Needed, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_PostInfo_needed(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "PostInfo",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _PostInfo_minRank(ctx context.Context, field graphql.CollectedField, obj *model.PostInfo) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PostInfo_minRank(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.MinRank, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(model.Rank)
-	fc.Result = res
-	return ec.marshalNRank2LFGbackendᚋgraphᚋmodelᚐRank(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_PostInfo_minRank(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "PostInfo",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Rank does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _PostInfo_closed(ctx context.Context, field graphql.CollectedField, obj *model.PostInfo) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PostInfo_closed(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Closed, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_PostInfo_closed(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "PostInfo",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			return nil, errors.New("field of type GameMode does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3371,7 +2785,7 @@ func (ec *executionContext) _Query_getPosts(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetPosts(rctx, fc.Args["page"].(int), fc.Args["count"].(int))
+		return ec.resolvers.Query().GetPosts(rctx, fc.Args["count"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3383,9 +2797,9 @@ func (ec *executionContext) _Query_getPosts(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.PostInfo)
+	res := resTmp.([]*model.Post)
 	fc.Result = res
-	return ec.marshalNPostInfo2ᚕᚖLFGbackendᚋgraphᚋmodelᚐPostInfoᚄ(ctx, field.Selections, res)
+	return ec.marshalNPost2ᚕᚖLFGbackendᚋgraphᚋmodelᚐPostᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_getPosts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3397,17 +2811,17 @@ func (ec *executionContext) fieldContext_Query_getPosts(ctx context.Context, fie
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_PostInfo_id(ctx, field)
-			case "playerNames":
-				return ec.fieldContext_PostInfo_playerNames(ctx, field)
+				return ec.fieldContext_Post_id(ctx, field)
+			case "players":
+				return ec.fieldContext_Post_players(ctx, field)
 			case "needed":
-				return ec.fieldContext_PostInfo_needed(ctx, field)
+				return ec.fieldContext_Post_needed(ctx, field)
 			case "minRank":
-				return ec.fieldContext_PostInfo_minRank(ctx, field)
-			case "closed":
-				return ec.fieldContext_PostInfo_closed(ctx, field)
+				return ec.fieldContext_Post_minRank(ctx, field)
+			case "gameMode":
+				return ec.fieldContext_Post_gameMode(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type PostInfo", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
 		},
 	}
 	defer func() {
@@ -3549,172 +2963,6 @@ func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, fie
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
 		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Subscription_joinPost(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
-	fc, err := ec.fieldContext_Subscription_joinPost(ctx, field)
-	if err != nil {
-		return nil
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = nil
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Subscription().JoinPost(rctx, fc.Args["player"].(model.PlayerInput), fc.Args["id"].(string))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return nil
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return nil
-	}
-	return func(ctx context.Context) graphql.Marshaler {
-		select {
-		case res, ok := <-resTmp.(<-chan *model.Post):
-			if !ok {
-				return nil
-			}
-			return graphql.WriterFunc(func(w io.Writer) {
-				w.Write([]byte{'{'})
-				graphql.MarshalString(field.Alias).MarshalGQL(w)
-				w.Write([]byte{':'})
-				ec.marshalNPost2ᚖLFGbackendᚋgraphᚋmodelᚐPost(ctx, field.Selections, res).MarshalGQL(w)
-				w.Write([]byte{'}'})
-			})
-		case <-ctx.Done():
-			return nil
-		}
-	}
-}
-
-func (ec *executionContext) fieldContext_Subscription_joinPost(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Subscription",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Post_id(ctx, field)
-			case "players":
-				return ec.fieldContext_Post_players(ctx, field)
-			case "needed":
-				return ec.fieldContext_Post_needed(ctx, field)
-			case "minRank":
-				return ec.fieldContext_Post_minRank(ctx, field)
-			case "messages":
-				return ec.fieldContext_Post_messages(ctx, field)
-			case "closed":
-				return ec.fieldContext_Post_closed(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Subscription_joinPost_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Subscription_createPost(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
-	fc, err := ec.fieldContext_Subscription_createPost(ctx, field)
-	if err != nil {
-		return nil
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = nil
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Subscription().CreatePost(rctx, fc.Args["mode"].(model.GameMode), fc.Args["player"].(model.PlayerInput), fc.Args["need"].(int), fc.Args["minRank"].(model.Rank))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return nil
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return nil
-	}
-	return func(ctx context.Context) graphql.Marshaler {
-		select {
-		case res, ok := <-resTmp.(<-chan *model.Post):
-			if !ok {
-				return nil
-			}
-			return graphql.WriterFunc(func(w io.Writer) {
-				w.Write([]byte{'{'})
-				graphql.MarshalString(field.Alias).MarshalGQL(w)
-				w.Write([]byte{':'})
-				ec.marshalNPost2ᚖLFGbackendᚋgraphᚋmodelᚐPost(ctx, field.Selections, res).MarshalGQL(w)
-				w.Write([]byte{'}'})
-			})
-		case <-ctx.Done():
-			return nil
-		}
-	}
-}
-
-func (ec *executionContext) fieldContext_Subscription_createPost(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Subscription",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Post_id(ctx, field)
-			case "players":
-				return ec.fieldContext_Post_players(ctx, field)
-			case "needed":
-				return ec.fieldContext_Post_needed(ctx, field)
-			case "minRank":
-				return ec.fieldContext_Post_minRank(ctx, field)
-			case "messages":
-				return ec.fieldContext_Post_messages(ctx, field)
-			case "closed":
-				return ec.fieldContext_Post_closed(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Subscription_createPost_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return
 	}
 	return fc, nil
 }
@@ -5918,72 +5166,9 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "messages":
+		case "gameMode":
 
-			out.Values[i] = ec._Post_messages(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "closed":
-
-			out.Values[i] = ec._Post_closed(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
-var postInfoImplementors = []string{"PostInfo"}
-
-func (ec *executionContext) _PostInfo(ctx context.Context, sel ast.SelectionSet, obj *model.PostInfo) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, postInfoImplementors)
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("PostInfo")
-		case "id":
-
-			out.Values[i] = ec._PostInfo_id(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "playerNames":
-
-			out.Values[i] = ec._PostInfo_playerNames(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "needed":
-
-			out.Values[i] = ec._PostInfo_needed(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "minRank":
-
-			out.Values[i] = ec._PostInfo_minRank(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "closed":
-
-			out.Values[i] = ec._PostInfo_closed(ctx, field, obj)
+			out.Values[i] = ec._Post_gameMode(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -6085,28 +5270,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		return graphql.Null
 	}
 	return out
-}
-
-var subscriptionImplementors = []string{"Subscription"}
-
-func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func(ctx context.Context) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionImplementors)
-	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
-		Object: "Subscription",
-	})
-	if len(fields) != 1 {
-		ec.Errorf(ctx, "must subscribe to exactly one stream")
-		return nil
-	}
-
-	switch fields[0].Name {
-	case "joinPost":
-		return ec._Subscription_joinPost(ctx, fields[0])
-	case "createPost":
-		return ec._Subscription_createPost(ctx, fields[0])
-	default:
-		panic("unknown field " + strconv.Quote(fields[0].Name))
-	}
 }
 
 var __DirectiveImplementors = []string{"__Directive"}
@@ -6482,60 +5645,6 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
-func (ec *executionContext) marshalNMessage2ᚕᚖLFGbackendᚋgraphᚋmodelᚐMessageᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Message) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNMessage2ᚖLFGbackendᚋgraphᚋmodelᚐMessage(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNMessage2ᚖLFGbackendᚋgraphᚋmodelᚐMessage(ctx context.Context, sel ast.SelectionSet, v *model.Message) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._Message(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalNPlayer2LFGbackendᚋgraphᚋmodelᚐPlayer(ctx context.Context, sel ast.SelectionSet, v model.Player) graphql.Marshaler {
 	return ec._Player(ctx, sel, &v)
 }
@@ -6621,21 +5730,7 @@ func (ec *executionContext) unmarshalNPlayerInput2ᚖLFGbackendᚋgraphᚋmodel�
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNPost2LFGbackendᚋgraphᚋmodelᚐPost(ctx context.Context, sel ast.SelectionSet, v model.Post) graphql.Marshaler {
-	return ec._Post(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNPost2ᚖLFGbackendᚋgraphᚋmodelᚐPost(ctx context.Context, sel ast.SelectionSet, v *model.Post) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._Post(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNPostInfo2ᚕᚖLFGbackendᚋgraphᚋmodelᚐPostInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.PostInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNPost2ᚕᚖLFGbackendᚋgraphᚋmodelᚐPostᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Post) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -6659,7 +5754,7 @@ func (ec *executionContext) marshalNPostInfo2ᚕᚖLFGbackendᚋgraphᚋmodelᚐ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNPostInfo2ᚖLFGbackendᚋgraphᚋmodelᚐPostInfo(ctx, sel, v[i])
+			ret[i] = ec.marshalNPost2ᚖLFGbackendᚋgraphᚋmodelᚐPost(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -6679,14 +5774,14 @@ func (ec *executionContext) marshalNPostInfo2ᚕᚖLFGbackendᚋgraphᚋmodelᚐ
 	return ret
 }
 
-func (ec *executionContext) marshalNPostInfo2ᚖLFGbackendᚋgraphᚋmodelᚐPostInfo(ctx context.Context, sel ast.SelectionSet, v *model.PostInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNPost2ᚖLFGbackendᚋgraphᚋmodelᚐPost(ctx context.Context, sel ast.SelectionSet, v *model.Post) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._PostInfo(ctx, sel, v)
+	return ec._Post(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNRank2LFGbackendᚋgraphᚋmodelᚐRank(ctx context.Context, v interface{}) (model.Rank, error) {

@@ -4,117 +4,105 @@
 
 
 type Player {
-  name: String!
-  tag: String!
-  seasonId :           String!
-  seasonName:			String!
-  playlist   :         String!
-  rank        :        String!
-  iconUrl      :       String!
-  matchesPlayed :     Int!
-  matchWinPct       :  Float!
-  kills				:Int!
-  killsPercentile		:Float!
-  killsPerRound       :Float!
-  killsPerMatch       :Float!
-  scorePerRound       :Float!
-  scorePerRoundPercentile :Float!
-  assists	:		    Int!
-  assistsPerRound		:Float!
-  assistsPerMatch     :Float!
-  kd                  :Float!
-  kdPercentile		:Float!
-  kda                 :Float!
-  dmgPerRound         :Float!
-  headshotPct         :Float!
-  headshotPctPercentile :Float!
-  econRating			:Float!
-  firstBloodsPerMatch :Float!
-  firstDeathsPerRound :Float!
-  mostKillsInMatch   : Int!
-  timePlayed   		: Int!
-  trnPerformanceScore :Float!
-  peakRank	:		String!
-  peakRankIconUrl:		String!
-  peakRankActName :    String!
+    name: String!
+    tag: String!
+    seasonId :           String!
+    seasonName:            String!
+    playlist   :         String!
+    rank        :        String!
+    iconUrl      :       String!
+    matchesPlayed :     Int!
+    matchWinPct       :  Float!
+    kills                  :Int!
+    killsPercentile        :Float!
+    killsPerRound       :Float!
+    killsPerMatch       :Float!
+    scorePerRound       :Float!
+    scorePerRoundPercentile :Float!
+    assists                  :Int!
+    assistsPerRound         :Float!
+    assistsPerMatch         :Float!
+    kd                  :Float!
+    kdPercentile        :Float!
+    kda                 :Float!
+    dmgPerRound         :Float!
+    headshotPct         :Float!
+    headshotPctPercentile :Float!
+    econRating            :Float!
+    firstBloodsPerMatch :Float!
+    firstDeathsPerRound :Float!
+    mostKillsInMatch   : Int!
+    timePlayed        : Int!
+    trnPerformanceScore :Float!
+    peakRank    :        String!
+    peakRankIconUrl:        String!
+    peakRankActName :    String!
 }
 
 type Message {
-  sender: Player!
-  text: String!
-  sentAt: String!
+    sender: String!
+    text: String!
+    sentAt: String!
 }
+
 
 type Post {
-  id: String!
-  players: [Player!]!
-  needed: Int!
-  minRank: Rank!
-  messages: [Message!]!
-  closed: Boolean!
-}
-
-type PostInfo {
-  id: String!
-  playerNames: [String!]!
-  needed: Int!
-  minRank: Rank!
-  closed: Boolean!
+    id: String!
+    players: [String!]!
+    needed: Int!
+    minRank: Rank!
+    gameMode: GameMode!
 }
 
 input PlayerInput {
-  name: String!
-  tag: String!
+    name: String!
+    tag: String!
 }
 
 type Query {
-  getPlayers(players: [PlayerInput!]!): [Player!]!
-  getPosts(page: Int!, count: Int!): [PostInfo!]!
+    getPlayers(players: [PlayerInput!]!): [Player!]!
+    getPosts(count: Int!): [Post!]!
 }
 
-type Subscription {
-  joinPost(player: PlayerInput!, id: String!): Post!
-  createPost(mode: GameMode!, player: PlayerInput!, need: Int!, minRank: Rank!): Post!
-}
 
 type Mutation {
 
-  signInAsPlayer(player: PlayerInput!): Player!
+    signInAsPlayer(player: PlayerInput!): Player!
 
-  sendMessage(text: String!): Boolean!
+    sendMessage(text: String!): Boolean!
 }
 
 enum GameMode {
-  RANKED
-  UNRANKED
-  SPIKE
+    RANKED
+    UNRANKED
+    SPIKE
 }
 
 enum Rank {
-  RADIANT
-  IMMORTAL3
-  IMMORTAL2
-  IMMORTAL1
-  ASCENDANT3
-  ASCENDANT2
-  ASCENDANT1
-  DIAMOND3
-  DIAMOND2
-  DIAMOND1
-  PLAT3
-  PLAT2
-  PLAT1
-  GOLD3
-  GOLD2
-  GOLD1
-  SILVER3
-  SILVER2
-  SILVER1
-  BRONZE3
-  BRONZE2
-  BRONZE1
-  IRON3
-  IRON2
-  IRON1
-  UNRANKED
+    RADIANT
+    IMMORTAL3
+    IMMORTAL2
+    IMMORTAL1
+    ASCENDANT3
+    ASCENDANT2
+    ASCENDANT1
+    DIAMOND3
+    DIAMOND2
+    DIAMOND1
+    PLAT3
+    PLAT2
+    PLAT1
+    GOLD3
+    GOLD2
+    GOLD1
+    SILVER3
+    SILVER2
+    SILVER1
+    BRONZE3
+    BRONZE2
+    BRONZE1
+    IRON3
+    IRON2
+    IRON1
+    UNRANKED
 }
