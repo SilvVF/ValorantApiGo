@@ -1,7 +1,8 @@
 package graph
 
 import (
-	"LFGbackend/srv"
+	"LFGbackend/lfg"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -11,5 +12,6 @@ import (
 
 type Resolver struct {
 	Db     *gorm.DB
-	Server *srv.Server
+	Server *lfg.LfgServer
+	Client *redis.Client
 }

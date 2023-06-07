@@ -20,5 +20,9 @@ services:
       - "5432:5432"
     volumes:
       - postgres-db:/var/lib/postgresql/data
+  db2:
+    image: redis
+    ports:
+      - "6379:6379"
 volumes:
   postgres-db:

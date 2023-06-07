@@ -2,9 +2,11 @@ package resolvers
 
 import (
 	"LFGbackend/graph/model"
-	"LFGbackend/srv"
+	"LFGbackend/middleware"
+	"LFGbackend/trn"
 	"LFGbackend/types"
 	"context"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 	"log"
 	"time"
@@ -25,29 +27,58 @@ func GetPlayerResolver(db *gorm.DB, _ context.Context, playerInputs []*model.Pla
 	return players, nil
 }
 
-func UpsertPlayerResolver(s *srv.Server, db *gorm.DB, ctx context.Context, playerInput model.PlayerInput) (*model.Player, error) {
+func SignInAsPlayerResolver(ctx context.Context, db *gorm.DB, playerInput model.PlayerInput, redisClient *redis.Client) (*model.Player, error) {
 
-	session := srv.GetSession(ctx)
+	client := middleware.ForContext(ctx)
+
+	for i := 0; i < 100; i++ {
+		log.Println(client.Id)
+	}
 
 	name, tag := playerInput.Name, playerInput.Tag
-	data, ok := getPlayerData(name, tag)
+	data, ok := trn.GetPlayerData(name, tag)
 	if !ok {
 		return nil, nil
 	}
 
 	player := data.AsPlayer(name, tag)
+	saved := types.GormPlayer{}
 
-	s.ClientIdToPlayer[session.ClientId] = &player
+	err := db.First(&saved, "id = ?", name+tag).Error
 
+	if err != nil {
+		err = createPlayerInDb(db, player, name+tag)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		db.Save(&types.GormPlayer{
+			Id:        saved.Id,
+			CreatedAt: saved.CreatedAt,
+			UpdatedAt: time.Now(),
+			Player:    player,
+		})
+	}
+
+	//client.Set(
+	//	ctx, clientId,
+	//	types.LfgSession{
+	//		ClientId: clientId,
+	//		Data:     data,
+	//	},
+	//	time.Hour*72,
+	//)
+
+	return &player, nil
+}
+
+func createPlayerInDb(db *gorm.DB, player model.Player, key string) error {
 	gormPlayer := types.GormPlayer{
-		Id:        name + tag,
+		Id:        key,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		Player:    player,
 	}
-	err := db.Save(gormPlayer).Error
-	if err != nil {
-		log.Println(err)
-	}
-	return &player, nil
+	err := db.Create(gormPlayer).Error
+	return err
 }

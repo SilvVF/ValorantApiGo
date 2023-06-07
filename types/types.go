@@ -39,30 +39,16 @@ type PlayerData struct {
 	PeakRankActName         string
 }
 
-type JoinRequest struct {
-	Player model.Player
-	PostId string
-	UserId string
-}
-
-type LeaveRequest struct {
-	Player model.Player
-	PostId string
-	UserId string
-}
-
-type PostSession struct {
+type JoinPostRequest struct {
+	User     User
 	ClientId string
+	PostId   string
 }
 
-type UserInfo struct {
-	ClientId string
-	Player   *model.Player
-}
-
-type User struct {
-	Info  UserInfo
-	State chan *model.Post
+type LfgSession struct {
+	ClientId     string
+	JoinedPostId string
+	Data         PlayerData
 }
 
 type GormPlayer struct {
@@ -70,80 +56,4 @@ type GormPlayer struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	model.Player
-}
-
-func (data *GormPlayer) AsPlayer() *model.Player {
-	return &model.Player{
-		Name:                    data.Name,
-		Tag:                     data.Tag,
-		SeasonID:                data.SeasonID,
-		SeasonName:              data.SeasonName,
-		Playlist:                data.Playlist,
-		Rank:                    data.Rank,
-		IconURL:                 data.IconURL,
-		MatchesPlayed:           data.MatchesPlayed,
-		MatchWinPct:             data.MatchWinPct,
-		Kills:                   data.Kills,
-		KillsPercentile:         data.KillsPercentile,
-		KillsPerRound:           data.KillsPerRound,
-		KillsPerMatch:           data.KillsPerMatch,
-		ScorePerRound:           data.ScorePerRound,
-		ScorePerRoundPercentile: data.ScorePerRoundPercentile,
-		Assists:                 data.Assists,
-		AssistsPerRound:         data.AssistsPerRound,
-		AssistsPerMatch:         data.AssistsPerMatch,
-		Kd:                      data.Kd,
-		KdPercentile:            data.KdPercentile,
-		Kda:                     data.Kda,
-		DmgPerRound:             data.DmgPerRound,
-		HeadshotPct:             data.HeadshotPct,
-		HeadshotPctPercentile:   data.HeadshotPctPercentile,
-		EconRating:              data.EconRating,
-		FirstBloodsPerMatch:     data.FirstBloodsPerMatch,
-		FirstDeathsPerRound:     data.FirstDeathsPerRound,
-		MostKillsInMatch:        data.MostKillsInMatch,
-		TimePlayed:              data.TimePlayed,
-		TrnPerformanceScore:     data.TrnPerformanceScore,
-		PeakRank:                data.PeakRank,
-		PeakRankIconURL:         data.PeakRankIconURL,
-		PeakRankActName:         data.PeakRankActName,
-	}
-}
-
-func (data PlayerData) AsPlayer(name string, tag string) model.Player {
-	return model.Player{
-		Name:                    name,
-		Tag:                     tag,
-		SeasonID:                data.SeasonId,
-		SeasonName:              data.SeasonName,
-		Playlist:                data.Playlist,
-		Rank:                    data.Rank,
-		IconURL:                 data.IconUrl,
-		MatchesPlayed:           data.MatchesPlayed,
-		MatchWinPct:             data.MatchWinPct,
-		Kills:                   data.Kills,
-		KillsPercentile:         data.KillsPercentile,
-		KillsPerRound:           data.KillsPerRound,
-		KillsPerMatch:           data.KillsPerMatch,
-		ScorePerRound:           data.ScorePerRound,
-		ScorePerRoundPercentile: data.ScorePerRoundPercentile,
-		Assists:                 data.Assists,
-		AssistsPerRound:         data.AssistsPerRound,
-		AssistsPerMatch:         data.AssistsPerMatch,
-		Kd:                      data.Kd,
-		KdPercentile:            data.KdPercentile,
-		Kda:                     data.Kda,
-		DmgPerRound:             data.DmgPerRound,
-		HeadshotPct:             data.HeadshotPct,
-		HeadshotPctPercentile:   data.HeadshotPctPercentile,
-		EconRating:              data.EconRating,
-		FirstBloodsPerMatch:     data.FirstBloodsPerMatch,
-		FirstDeathsPerRound:     data.FirstDeathsPerRound,
-		MostKillsInMatch:        data.MostKillsInMatch,
-		TimePlayed:              data.TimePlayed,
-		TrnPerformanceScore:     data.TrnPerformanceScore,
-		PeakRank:                data.PeakRank,
-		PeakRankIconURL:         data.PeakRankIconUrl,
-		PeakRankActName:         data.PeakRankActName,
-	}
 }
