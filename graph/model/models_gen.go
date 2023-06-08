@@ -55,12 +55,17 @@ type PlayerInput struct {
 	Tag  string `json:"tag"`
 }
 
+type PlayerName struct {
+	Name string `json:"name"`
+	Tag  string `json:"tag"`
+}
+
 type Post struct {
-	ID       string   `json:"id"`
-	Players  []string `json:"players"`
-	Needed   int      `json:"needed"`
-	MinRank  Rank     `json:"minRank"`
-	GameMode GameMode `json:"gameMode"`
+	ID       string        `json:"id"`
+	Players  []*PlayerName `json:"players"`
+	Needed   int           `json:"needed"`
+	MinRank  Rank          `json:"minRank"`
+	GameMode GameMode      `json:"gameMode"`
 }
 
 type GameMode string

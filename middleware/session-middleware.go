@@ -22,7 +22,7 @@ func Middleware() func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			c, err := r.Cookie("clientId-cookie")
-			client := &Client{Id: c.Value}
+			client := &Client{}
 
 			if err == nil && c != nil {
 				client.Id = c.Value

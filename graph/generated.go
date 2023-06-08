@@ -92,6 +92,11 @@ type ComplexityRoot struct {
 		TrnPerformanceScore     func(childComplexity int) int
 	}
 
+	PlayerName struct {
+		Name func(childComplexity int) int
+		Tag  func(childComplexity int) int
+	}
+
 	Post struct {
 		GameMode func(childComplexity int) int
 		ID       func(childComplexity int) int
@@ -102,7 +107,7 @@ type ComplexityRoot struct {
 
 	Query struct {
 		GetPlayers func(childComplexity int, players []*model.PlayerInput) int
-		GetPosts   func(childComplexity int, count int) int
+		GetPosts   func(childComplexity int, count int, offset int) int
 	}
 }
 
@@ -112,7 +117,7 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	GetPlayers(ctx context.Context, players []*model.PlayerInput) ([]*model.Player, error)
-	GetPosts(ctx context.Context, count int) ([]*model.Post, error)
+	GetPosts(ctx context.Context, count int, offset int) ([]*model.Post, error)
 }
 
 type executableSchema struct {
@@ -406,6 +411,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Player.TrnPerformanceScore(childComplexity), true
 
+	case "PlayerName.name":
+		if e.complexity.PlayerName.Name == nil {
+			break
+		}
+
+		return e.complexity.PlayerName.Name(childComplexity), true
+
+	case "PlayerName.tag":
+		if e.complexity.PlayerName.Tag == nil {
+			break
+		}
+
+		return e.complexity.PlayerName.Tag(childComplexity), true
+
 	case "Post.gameMode":
 		if e.complexity.Post.GameMode == nil {
 			break
@@ -463,7 +482,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.GetPosts(childComplexity, args["count"].(int)), true
+		return e.complexity.Query.GetPosts(childComplexity, args["count"].(int), args["offset"].(int)), true
 
 	}
 	return 0, false
@@ -625,6 +644,15 @@ func (ec *executionContext) field_Query_getPosts_args(ctx context.Context, rawAr
 		}
 	}
 	args["count"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg1
 	return args, nil
 }
 
@@ -2428,6 +2456,94 @@ func (ec *executionContext) fieldContext_Player_peakRankActName(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _PlayerName_name(ctx context.Context, field graphql.CollectedField, obj *model.PlayerName) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PlayerName_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PlayerName_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlayerName",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlayerName_tag(ctx context.Context, field graphql.CollectedField, obj *model.PlayerName) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PlayerName_tag(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Tag, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PlayerName_tag(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlayerName",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Post_id(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Post_id(ctx, field)
 	if err != nil {
@@ -2498,9 +2614,9 @@ func (ec *executionContext) _Post_players(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]string)
+	res := resTmp.([]*model.PlayerName)
 	fc.Result = res
-	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+	return ec.marshalNPlayerName2ᚕᚖLFGbackendᚋgraphᚋmodelᚐPlayerNameᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Post_players(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2510,7 +2626,13 @@ func (ec *executionContext) fieldContext_Post_players(ctx context.Context, field
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_PlayerName_name(ctx, field)
+			case "tag":
+				return ec.fieldContext_PlayerName_tag(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PlayerName", field.Name)
 		},
 	}
 	return fc, nil
@@ -2785,7 +2907,7 @@ func (ec *executionContext) _Query_getPosts(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetPosts(rctx, fc.Args["count"].(int))
+		return ec.resolvers.Query().GetPosts(rctx, fc.Args["count"].(int), fc.Args["offset"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5128,6 +5250,41 @@ func (ec *executionContext) _Player(ctx context.Context, sel ast.SelectionSet, o
 	return out
 }
 
+var playerNameImplementors = []string{"PlayerName"}
+
+func (ec *executionContext) _PlayerName(ctx context.Context, sel ast.SelectionSet, obj *model.PlayerName) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, playerNameImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PlayerName")
+		case "name":
+
+			out.Values[i] = ec._PlayerName_name(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "tag":
+
+			out.Values[i] = ec._PlayerName_tag(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var postImplementors = []string{"Post"}
 
 func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj *model.Post) graphql.Marshaler {
@@ -5730,6 +5887,60 @@ func (ec *executionContext) unmarshalNPlayerInput2ᚖLFGbackendᚋgraphᚋmodel�
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNPlayerName2ᚕᚖLFGbackendᚋgraphᚋmodelᚐPlayerNameᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.PlayerName) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPlayerName2ᚖLFGbackendᚋgraphᚋmodelᚐPlayerName(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNPlayerName2ᚖLFGbackendᚋgraphᚋmodelᚐPlayerName(ctx context.Context, sel ast.SelectionSet, v *model.PlayerName) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PlayerName(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNPost2ᚕᚖLFGbackendᚋgraphᚋmodelᚐPostᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Post) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -5807,38 +6018,6 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
-}
-
-func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
-	var vSlice []interface{}
-	if v != nil {
-		vSlice = graphql.CoerceList(v)
-	}
-	var err error
-	res := make([]string, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	for i := range v {
-		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
-	}
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {

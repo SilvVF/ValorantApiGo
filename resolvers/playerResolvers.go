@@ -2,11 +2,11 @@ package resolvers
 
 import (
 	"LFGbackend/graph/model"
+	"LFGbackend/lfg"
 	"LFGbackend/middleware"
 	"LFGbackend/trn"
 	"LFGbackend/types"
 	"context"
-	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 	"log"
 	"time"
@@ -27,13 +27,9 @@ func GetPlayerResolver(db *gorm.DB, _ context.Context, playerInputs []*model.Pla
 	return players, nil
 }
 
-func SignInAsPlayerResolver(ctx context.Context, db *gorm.DB, playerInput model.PlayerInput, redisClient *redis.Client) (*model.Player, error) {
+func SignInAsPlayerResolver(ctx context.Context, db *gorm.DB, playerInput model.PlayerInput, manager *lfg.SessionManager) (*model.Player, error) {
 
 	client := middleware.ForContext(ctx)
-
-	for i := 0; i < 100; i++ {
-		log.Println(client.Id)
-	}
 
 	name, tag := playerInput.Name, playerInput.Tag
 	data, ok := trn.GetPlayerData(name, tag)
@@ -60,14 +56,7 @@ func SignInAsPlayerResolver(ctx context.Context, db *gorm.DB, playerInput model.
 		})
 	}
 
-	//client.Set(
-	//	ctx, clientId,
-	//	types.LfgSession{
-	//		ClientId: clientId,
-	//		Data:     data,
-	//	},
-	//	time.Hour*72,
-	//)
+	manager.Set(client.Id, player)
 
 	return &player, nil
 }

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"LFGbackend/graph/model"
 	"encoding/json"
 	"github.com/gorilla/websocket"
 )
@@ -11,10 +12,10 @@ type WsData struct {
 }
 
 type PlayerJoined struct {
-	Player PlayerData
+	Player model.Player
 }
 
 type User struct {
 	Conn   *websocket.Conn
-	Player PlayerData
+	Player model.Player
 }

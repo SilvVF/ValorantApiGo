@@ -1,15 +1,16 @@
 package main
 
 import (
+	"LFGbackend/graph/model"
 	"LFGbackend/lfg"
+	"LFGbackend/middleware"
 	"LFGbackend/types"
-	"context"
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
-	"github.com/redis/go-redis/v9"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 var upgrader = websocket.Upgrader{
@@ -17,58 +18,97 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func websocketHandler(ctx context.Context, client *redis.Client, server *lfg.LfgServer) http.HandlerFunc {
+func websocketCreatePostHandler(manager *lfg.SessionManager, server *lfg.LfgServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			return
 		}
-		postId, pidOk := vars["id"]
-		c, err := r.Cookie("middleware")
+		vars := mux.Vars(r)
 
-		if !pidOk || err != nil {
+		client := middleware.ForContext(r.Context())
+
+		player, ok := manager.Get(client.Id)
+
+		needed, nOk := vars["needed"]
+		gameMode, gmOk := vars["gamemode"]
+		minRank, mrOk := vars["minrank"]
+
+		if !nOk || !gmOk || !mrOk || !ok {
+			return
+		}
+
+		need, err := strconv.Atoi(needed)
+		if err != nil {
+			log.Println(err)
+		}
+
+		postId := server.CreatePost(need, gameMode, minRank)
+
+		go handleWS(conn, client.Id, player, postId, server)
+	}
+}
+
+func websocketJoinPostHandler(manager *lfg.SessionManager, server *lfg.LfgServer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		conn, err := upgrader.Upgrade(w, r, nil)
+
+		vars := mux.Vars(r)
+
+		if err != nil {
 			log.Println(err)
 			return
 		}
+		postId, pidOk := vars["id"]
 
-		bytes, err := client.Get(ctx, c.Value).Bytes()
-		session := &types.LfgSession{}
+		client := middleware.ForContext(r.Context())
 
-		err = json.Unmarshal(bytes, session)
-		if err != nil {
+		if !pidOk || client == nil {
+			log.Println(err)
+			return
+		}
+		playerData, ok := manager.Get(client.Id)
+		if !ok {
 			return
 		}
 
-		go func() {
-
-			err = server.JoinPost(types.JoinPostRequest{
-				User: types.User{
-					Conn:   conn,
-					Player: session.Data,
-				},
-				ClientId: c.Value,
-				PostId:   postId,
-			})
-
-			if err != nil {
-				return
-			}
-
-			for {
-				messageType, p, err := conn.ReadMessage()
-				if err != nil {
-					// handle closure
-					break
-				}
-
-				switch messageType {
-				case websocket.TextMessage:
-					unmarshallWSData(p)
-				}
-			}
-		}()
+		go handleWS(conn, client.Id, playerData, postId, server)
 	}
+}
+
+func handleWS(conn *websocket.Conn, clientID string, player model.Player, postId string, server *lfg.LfgServer) {
+
+	err := server.JoinPost(types.JoinPostRequest{
+		User: types.User{
+			Conn:   conn,
+			Player: player,
+		},
+		ClientId: clientID,
+		PostId:   postId,
+	})
+
+	if err != nil {
+		return
+	}
+
+	for {
+		messageType, p, err := conn.ReadMessage()
+
+		if err != nil {
+			// handle closure
+			break
+		}
+
+		switch messageType {
+		case websocket.TextMessage:
+			err = conn.WriteJSON(p)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	}
+
 }
 
 func unmarshallWSData(

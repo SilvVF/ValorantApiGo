@@ -48,7 +48,7 @@ type Message {
 
 type Post {
     id: String!
-    players: [String!]!
+    players: [PlayerName!]!
     needed: Int!
     minRank: Rank!
     gameMode: GameMode!
@@ -59,9 +59,14 @@ input PlayerInput {
     tag: String!
 }
 
+type PlayerName {
+    name: String!
+    tag: String!
+}
+
 type Query {
     getPlayers(players: [PlayerInput!]!): [Player!]!
-    getPosts(count: Int!): [Post!]!
+    getPosts(count: Int!, offset: Int!): [Post!]!
 }
 
 

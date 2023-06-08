@@ -12,7 +12,7 @@ import (
 
 // SignInAsPlayer is the resolver for the signInAsPlayer field.
 func (r *mutationResolver) SignInAsPlayer(ctx context.Context, player model.PlayerInput) (*model.Player, error) {
-	return resolvers.SignInAsPlayerResolver(ctx, r.Db, player, r.Client)
+	return resolvers.SignInAsPlayerResolver(ctx, r.Db, player, r.SessionManager)
 }
 
 // SendMessage is the resolver for the sendMessage field.
@@ -26,8 +26,37 @@ func (r *queryResolver) GetPlayers(ctx context.Context, players []*model.PlayerI
 }
 
 // GetPosts is the resolver for the getPosts field.
-func (r *queryResolver) GetPosts(ctx context.Context, count int) ([]*model.Post, error) {
-	panic("not here")
+func (r *queryResolver) GetPosts(ctx context.Context, count int, offset int) ([]*model.Post, error) {
+
+	posts := r.Server.GetPosts()
+	postModels := make([]*model.Post, 0, len(posts))
+
+	if count+offset < len(posts) {
+		posts = posts[offset : count+offset]
+	}
+
+	for _, v := range posts {
+
+		players := make([]*model.PlayerName, 0, len(v.Users))
+
+		for _, user := range v.Users {
+			pn := &model.PlayerName{
+				Name: user.Player.Name,
+				Tag:  user.Player.Tag,
+			}
+			players = append(players, pn)
+		}
+
+		pm := &model.Post{
+			ID:       v.ID,
+			Players:  players,
+			Needed:   v.Needed,
+			MinRank:  v.MinRank,
+			GameMode: v.GameMode,
+		}
+		postModels = append(postModels, pm)
+	}
+	return postModels, nil
 }
 
 // Mutation returns MutationResolver implementation.
@@ -38,4 +67,3 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-type subscriptionResolver struct{ *Resolver }

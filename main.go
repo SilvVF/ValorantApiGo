@@ -5,13 +5,11 @@ import (
 	"LFGbackend/lfg"
 	"LFGbackend/middleware"
 	"LFGbackend/types"
-	"context"
 	"fmt"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gorilla/mux"
-	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -42,35 +40,29 @@ func main() {
 
 	router := mux.NewRouter()
 	lfgServer := lfg.NewLfgServer()
-
-	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
+	sessionManger := lfg.NewManager()
 
 	router.Use(middleware.Middleware())
 
 	graphqlServer := handler.NewDefaultServer(graph.NewExecutableSchema(
 		graph.Config{
 			Resolvers: &graph.Resolver{
-				Db:     db,
-				Client: client,
-				Server: lfgServer,
+				Db:             db,
+				SessionManager: sessionManger,
+				Server:         lfgServer,
 			},
 		},
 	))
 
 	graphqlServer.AddTransport(&transport.Websocket{})
 
-	ctx := context.Background()
-
 	router.HandleFunc(
 		"/",
 		playground.Handler("playground", "/graphql"),
 	)
 	router.Handle("/graphql", graphqlServer)
-	router.HandleFunc("/post/{id}", websocketHandler(ctx, client, lfgServer))
+	router.HandleFunc("/post/{id}", websocketJoinPostHandler(sessionManger, lfgServer))
+	router.HandleFunc("/create/{needed}/{minrank}/{gamemode}", websocketCreatePostHandler(sessionManger, lfgServer))
 
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
